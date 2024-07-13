@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.sciborgs1155.robot.RobotTest" tests="1" skipped="0" failures="0" errors="0" timestamp="2024-07-13T19:41:35" hostname="Iroh.local" time="5.061">
+  <properties/>
+  <testcase name="initialize()" classname="org.sciborgs1155.robot.RobotTest" time="5.061"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

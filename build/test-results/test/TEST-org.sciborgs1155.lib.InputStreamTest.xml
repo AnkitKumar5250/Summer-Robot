@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="org.sciborgs1155.lib.InputStreamTest" tests="3" skipped="0" failures="0" errors="0" timestamp="2024-07-13T19:41:34" hostname="Iroh.local" time="0.609">
+  <properties/>
+  <testcase name="rateLimit()" classname="org.sciborgs1155.lib.InputStreamTest" time="0.601"/>
+  <testcase name="deadband()" classname="org.sciborgs1155.lib.InputStreamTest" time="0.003"/>
+  <testcase name="signedPow()" classname="org.sciborgs1155.lib.InputStreamTest" time="0.003"/>
+  <system-out><![CDATA[-3.24
+]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
