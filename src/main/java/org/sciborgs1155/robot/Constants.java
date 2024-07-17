@@ -41,6 +41,10 @@ public class Constants {
     public static final Measure<Distance> LENGTH = Inches.of(651.223);
     public static final Measure<Distance> WIDTH = Inches.of(323.277);
 
+    public static final Measure<Distance> SMALL_POLE = Inches.of(29301);
+    public static final Measure<Distance> MEDUIM_POLE = Inches.of(29302);
+    public static final Measure<Distance> LARGE_POLE = Inches.of(29303);
+
     /** Returns whether the provided position is within the boundaries of the field. */
     public static boolean inField(Pose3d pose) {
       return (pose.getX() > 0

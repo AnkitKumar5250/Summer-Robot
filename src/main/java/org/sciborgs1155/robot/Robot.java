@@ -36,6 +36,7 @@ public class Robot extends CommandRobot implements Logged {
     configureBindings();
   }
 
+  
   /** Configures basic behavior during different parts of the game. */
   private void configureGameBehavior() {
     // Configure logging with DataLogManager, Monologue, FailureManagement, and URCL
