@@ -5,7 +5,7 @@ import static org.sciborgs1155.robot.Constants.Field.*;
 import static org.sciborgs1155.robot.elevator.ElevatorConstants.*;
 
 import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.controls.ControlRequest.*;
+import com.ctre.phoenix6.controls.*;
 import com.ctre.phoenix6.controls.DifferentialFollower;
 
 import edu.wpi.first.math.controller.PIDController;
@@ -20,9 +20,8 @@ public class Elevator extends SubsystemBase {
     public Elevator() {
         follower.setControl(new DifferentialFollower(leader.getDeviceID(), false));
     }
-    
-    // I have to leave in abt 30 mins
-    
+    // approx 5 mins left, till i have to go
+    // the first time we did it, it said smt about gradle not connecting
 
     public void moveSmall() {
         
