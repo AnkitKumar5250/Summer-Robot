@@ -21,5 +21,7 @@ public final class Ports {
   public static final class Elevator {
     public static final int ELEVATOR_LEADER = 18;
     public static final int ELEVATOR_FOLLOWER = 19;
+    
+    public static final int ELEVATOR_ENCODER_PIN = 0;
   }
 }
