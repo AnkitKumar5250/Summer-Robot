@@ -22,4 +22,9 @@ public final class Ports {
     public static final int ELEVATOR_LEADER = 18;
     public static final int ELEVATOR_FOLLOWER = 19;
   }
+
+  public static final class Claw {
+    public static final int CLAW_MOTOR = 20;
+    public static final int CLAW_ROLLERS = 21;
+  }
 }
