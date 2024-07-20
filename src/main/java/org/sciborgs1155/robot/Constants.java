@@ -38,12 +38,12 @@ public class Constants {
 
   // Origin at corner of blue alliance side of field
   public static class Field {
-    public static final Measure<Distance> LENGTH = Inches.of(651.223);
-    public static final Measure<Distance> WIDTH = Inches.of(323.277);
+    public static final Measure<Distance> LENGTH = Centimeter.of(651.223);
+    public static final Measure<Distance> WIDTH = Centimeter.of(323.277);
 
-    public static final Measure<Distance> SMALL_POLE = Inches.of(29301);
-    public static final Measure<Distance> MEDUIM_POLE = Inches.of(29302);
-    public static final Measure<Distance> LARGE_POLE = Inches.of(29303);
+    public static final Measure<Distance> GROUND = Centimeter.of(29301);
+    public static final Measure<Distance> MEDUIM_POLE = Centimeter.of(29302);
+    public static final Measure<Distance> LARGE_POLE = Centimeter.of(29303);
 
     /** Returns whether the provided position is within the boundaries of the field. */
     public static boolean inField(Pose3d pose) {

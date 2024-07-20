@@ -9,12 +9,14 @@ import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
+import edu.wpi.first.wpilibj2.command.button.Trigger;
 import monologue.Annotations.Log;
 import monologue.Logged;
 import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
 import org.sciborgs1155.lib.CommandRobot;
 import org.sciborgs1155.robot.Ports.OI;
+import org.sciborgs1155.robot.elevator.Elevator;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -27,6 +29,10 @@ public class Robot extends CommandRobot implements Logged {
   // INPUT DEVICES
   private final CommandXboxController operator = new CommandXboxController(OI.OPERATOR);
   private final CommandXboxController driver = new CommandXboxController(OI.DRIVER);
+
+  // SUBSYSTEMS
+
+  private final Elevator elevator = new Elevator();
 
 
   /** The robot contains subsystems, OI devices, and commands. */
@@ -63,7 +69,20 @@ public class Robot extends CommandRobot implements Logged {
    * running on a subsystem.
    */
   /** Configures trigger -> command bindings */
-  private void configureBindings() {}
+  private void configureBindings() {
+    // elevator moves up to the height appropriate for scoring in the large pole when 'A' is pressed
+    Trigger A = operator.a();
+    A.onTrue(elevator.moveLarge());
+
+    // elevator moves up to the height appropriate for scoring in the large pole when 'B' is pressed
+    Trigger B = operator.b();
+    B.onTrue(elevator.moveMedium());
+
+    // elevator moves up to the height appropriate for scoring in the large pole when 'X' is pressed
+    Trigger X = operator.x();
+    X.onTrue(elevator.moveGround());
+ 
+  }
 
   @Override
   public void close() {
