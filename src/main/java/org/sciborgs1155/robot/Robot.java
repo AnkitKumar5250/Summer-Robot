@@ -71,16 +71,13 @@ public class Robot extends CommandRobot implements Logged {
   /** Configures trigger -> command bindings */
   private void configureBindings() {
     // elevator moves up to the height appropriate for scoring in the large pole when 'A' is pressed
-    Trigger A = operator.a();
-    A.onTrue(elevator.moveLarge());
+    driver.a().onTrue(elevator.moveLarge());
 
     // elevator moves up to the height appropriate for scoring in the large pole when 'B' is pressed
-    Trigger B = operator.b();
-    B.onTrue(elevator.moveMedium());
+    driver.b().onTrue(elevator.moveMedium());
 
     // elevator moves up to the height appropriate for scoring in the large pole when 'X' is pressed
-    Trigger X = operator.x();
-    X.onTrue(elevator.moveGround());
+    driver.x().onTrue(elevator.moveGround());
  
   }
 
