@@ -3,6 +3,7 @@ package org.sciborgs1155.robot;
 import static edu.wpi.first.units.Units.Seconds;
 import static org.sciborgs1155.robot.Constants.PERIOD;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
@@ -16,6 +17,7 @@ import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
 import org.sciborgs1155.lib.CommandRobot;
 import org.sciborgs1155.robot.Ports.OI;
+import org.sciborgs1155.robot.drive.TankDrive;
 import org.sciborgs1155.robot.elevator.Elevator;
 
 /**
@@ -31,8 +33,11 @@ public class Robot extends CommandRobot implements Logged {
   private final CommandXboxController driver = new CommandXboxController(OI.DRIVER);
 
   // SUBSYSTEMS
-
+  private final TankDrive tankDrive = new TankDrive();
   private final Elevator elevator = new Elevator();
+
+  // IDK
+  private final Pose2d position = new Pose2d();
 
 
   /** The robot contains subsystems, OI devices, and commands. */
@@ -74,11 +79,10 @@ public class Robot extends CommandRobot implements Logged {
     driver.a().onTrue(elevator.moveLarge());
 
     // elevator moves up to the height appropriate for scoring in the large pole when 'B' is pressed
-    driver.b().onTrue(elevator.moveMedium());
+    driver.b().onTrue(elevator.moveSmall());
 
     // elevator moves up to the height appropriate for scoring in the large pole when 'X' is pressed
     driver.x().onTrue(elevator.moveGround());
- 
   }
 
   @Override
