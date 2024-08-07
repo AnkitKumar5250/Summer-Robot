@@ -48,8 +48,6 @@ public class TankDrive extends SubsystemBase {
             frontRight::setVoltage);
 
     // instantiates Odometry classes
-    private final DifferentialDriveWheelPositions differentialDriveWheelPositions = new DifferentialDriveWheelPositions(
-            Meters.of(0), Meters.of(0));
     private final DifferentialDriveOdometry differentialDriveOdometry = new DifferentialDriveOdometry(
             gyro.getRotation2d(), Meters.of(0), Meters.of(0), INITIAL_ROBOT_POSE);
 
@@ -98,18 +96,7 @@ public class TankDrive extends SubsystemBase {
         setDefaultCommand(run(() -> {
             frontRight.setVoltage(pidControllerTranslation.calculate(frontRight.getVelocity().getValueAsDouble(), 0));
             frontLeft.setVoltage(pidControllerTranslation.calculate(frontLeft.getVelocity().getValueAsDouble(), 0));
-        }).until(() -> pidControllerTranslation.atSetpoint()));
-    }
-
-    /**
-     * Resets the encoders and updates the robot position on the field.
-     */
-    public void updateWheelPositions() {
-        differentialDriveWheelPositions.leftMeters += leftEncoder.getDistance();
-        differentialDriveWheelPositions.rightMeters += rightEncoder.getDistance();
-
-        leftEncoder.reset();
-        rightEncoder.reset();
+        }));
     }
 
     /**
@@ -130,19 +117,21 @@ public class TankDrive extends SubsystemBase {
         return run(() -> {
             frontRight.setVoltage(pidControllerTranslation.calculate(frontRight.getVelocity().getValueAsDouble(), 0));
             frontLeft.setVoltage(pidControllerTranslation.calculate(frontLeft.getVelocity().getValueAsDouble(), 0));
-        }).until(() -> pidControllerTranslation.atSetpoint());
+        }).deadlineWith(run(() -> {
+            differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
+        })).until(() -> pidControllerTranslation.atSetpoint());
     }
 
     /**
      * Drives based on driver input.
      * 
-     * @param controller : Command Xbox Controller
+     * @param leftY  : Y value of left joystick.
+     * @param rightY : y value of right joystick.
      * @return A command.
      */
     public Command drive(double leftY, double rightY) {
-        updateWheelPositions();
-        return run(() -> differentialDrive.tankDrive(leftY, rightY)).alongWith(runOnce(() -> {
-            differentialDriveOdometry.update(gyro.getRotation2d(), differentialDriveWheelPositions);
+        return run(() -> differentialDrive.tankDrive(leftY, rightY)).alongWith(run(() -> {
+            differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
         }));
     }
 
@@ -153,17 +142,19 @@ public class TankDrive extends SubsystemBase {
      * @return A command.
      */
     public Command drive(Measure<Distance> distance) {
-        updateWheelPositions();
+        DifferentialDriveWheelPositions previousWheelPositions = new DifferentialDriveWheelPositions(
+                leftEncoder.getDistance(), rightEncoder.getDistance());
         pidControllerTranslation.setSetpoint(distance.in(Meters));
 
         return run(() -> {
-            double encoderValue = (leftEncoder.getDistance() + rightEncoder.getDistance()) / 2;
+            double encoderValue = (leftEncoder.getDistance() - previousWheelPositions.leftMeters
+                    + rightEncoder.getDistance() - previousWheelPositions.rightMeters) / 2;
             double voltage = pidControllerTranslation.calculate(encoderValue);
 
             frontLeft.setVoltage(voltage);
             frontRight.setVoltage(voltage);
-        }).alongWith(runOnce(() -> {
-            differentialDriveOdometry.update(gyro.getRotation2d(), differentialDriveWheelPositions);
+        }).deadlineWith(run(() -> {
+            differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
         })).until(() -> pidControllerTranslation.atSetpoint());
     }
 
@@ -174,19 +165,20 @@ public class TankDrive extends SubsystemBase {
      * @return A command.
      */
     public Command rotateBy(Measure<Angle> degrees) {
-        updateWheelPositions();
-
+        DifferentialDriveWheelPositions previousWheelPositions = new DifferentialDriveWheelPositions(
+                leftEncoder.getDistance(), rightEncoder.getDistance());
         double distance = degrees.in(Degrees) * TURNING_RADIUS.in(Meters) * Math.PI * 2 / 360;
         pidControllerRotation.setSetpoint(distance);
 
         return run(() -> {
-            double encoderValue = (leftEncoder.getDistance() + rightEncoder.getDistance()) / 2;
+            double encoderValue = (leftEncoder.getDistance() - previousWheelPositions.leftMeters
+                    + rightEncoder.getDistance() - previousWheelPositions.rightMeters) / 2;
             double voltage = pidControllerRotation.calculate(encoderValue);
 
             frontLeft.setVoltage(-voltage);
             frontRight.setVoltage(voltage);
-        }).alongWith(runOnce(() -> {
-            differentialDriveOdometry.update(gyro.getRotation2d(), differentialDriveWheelPositions);
+        }).deadlineWith(run(() -> {
+            differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
         })).until(() -> pidControllerRotation.atSetpoint());
     }
 }

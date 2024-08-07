@@ -6,9 +6,11 @@ import static org.sciborgs1155.robot.Constants.PERIOD;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.Trigger;
 import monologue.Annotations.Log;
@@ -36,7 +38,7 @@ public class Robot extends CommandRobot implements Logged {
   private final CommandXboxController driver = new CommandXboxController(OI.DRIVER);
 
   // SUBSYSTEMS
-  private final TankDrive tankDrive = new TankDrive();
+  private final TankDrive drivetrain = new TankDrive();
   private final Elevator elevator = new Elevator();
 
   /** The robot contains subsystems, OI devices, and commands. */
@@ -54,8 +56,9 @@ public class Robot extends CommandRobot implements Logged {
     addPeriodic(Monologue::updateAll, PERIOD.in(Seconds));
 
     SmartDashboard.putData(CommandScheduler.getInstance());
+
     // Log PDH
-    // SmartDashboard.putData("PDH", new PowerDistribution());
+    SmartDashboard.putData("PDH", new PowerDistribution());
 
     RobotController.setBrownoutVoltage(6.0);
 
@@ -92,7 +95,8 @@ public class Robot extends CommandRobot implements Logged {
    */
   @Override
   public void teleopInit() {
-
+    // Starts driving based on driver input.
+    drivetrain.setDefaultCommand(Commands.runOnce(() -> drivetrain.drive(driver.getLeftY(), driver.getRightY())));
   }
 
   /**
@@ -100,7 +104,7 @@ public class Robot extends CommandRobot implements Logged {
    */
   @Override
   public void teleopPeriodic() {
-
+   
   }
 
   /**
@@ -108,7 +112,7 @@ public class Robot extends CommandRobot implements Logged {
    */
   @Override
   public void autonomousInit() {
-
+    CommandScheduler.getInstance().cancelAll();
   }
 
   /**
