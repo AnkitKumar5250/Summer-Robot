@@ -3,6 +3,8 @@ package org.sciborgs1155.robot;
 import static edu.wpi.first.units.Units.Seconds;
 import static org.sciborgs1155.robot.Constants.PERIOD;
 
+
+
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.RobotController;
@@ -15,6 +17,8 @@ import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
 import org.sciborgs1155.lib.CommandRobot;
 import org.sciborgs1155.robot.Ports.OI;
+import org.sciborgs1155.robot.claw.Claw;
+import org.sciborgs1155.robot.wrist.Wrist;
 
 /**
  * This class is where the bulk of the robot should be declared. Since Command-based is a
@@ -36,7 +40,11 @@ public class Robot extends CommandRobot implements Logged {
     configureBindings();
   }
 
-  
+  private final Wrist wrist = new Wrist(); 
+  private final Claw claw = new Claw();
+
+
+
   /** Configures basic behavior during different parts of the game. */
   private void configureGameBehavior() {
     // Configure logging with DataLogManager, Monologue, FailureManagement, and URCL
@@ -63,7 +71,11 @@ public class Robot extends CommandRobot implements Logged {
    * running on a subsystem.
    */
   /** Configures trigger -> command bindings */
-  private void configureBindings() {}
+  private void configureBindings() {
+    operator.a().whileTrue(claw.startRollers());
+
+    operator.b().whileTrue(wrist.turnWrist(Math.PI/2));
+  }
 
   @Override
   public void close() {

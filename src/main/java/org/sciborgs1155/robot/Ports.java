@@ -25,6 +25,9 @@ public final class Ports {
 
   public static final class Claw {
     public static final int CLAW_MOTOR = 20;
-    public static final int CLAW_ROLLERS = 21;
+  }
+
+  public static final class Wrist {
+    public static final int WRIST_MOTOR = 21;
   }
 }
