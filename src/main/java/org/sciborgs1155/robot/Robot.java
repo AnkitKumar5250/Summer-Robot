@@ -21,9 +21,12 @@ import org.sciborgs1155.robot.drive.TankDrive;
 import org.sciborgs1155.robot.elevator.Elevator;
 
 /**
- * This class is where the bulk of the robot should be declared. Since Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
+ * This class is where the bulk of the robot should be declared. Since
+ * Command-based is a
+ * "declarative" paradigm, very little robot logic should actually be handled in
+ * the {@link Robot}
+ * periodic methods (other than the scheduler calls). Instead, the structure of
+ * the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class Robot extends CommandRobot implements Logged {
@@ -36,10 +39,6 @@ public class Robot extends CommandRobot implements Logged {
   private final TankDrive tankDrive = new TankDrive();
   private final Elevator elevator = new Elevator();
 
-  // IDK
-  private final Pose2d position = new Pose2d();
-
-
   /** The robot contains subsystems, OI devices, and commands. */
   public Robot() {
     super(PERIOD.in(Seconds));
@@ -47,7 +46,6 @@ public class Robot extends CommandRobot implements Logged {
     configureBindings();
   }
 
-  
   /** Configures basic behavior during different parts of the game. */
   private void configureGameBehavior() {
     // Configure logging with DataLogManager, Monologue, FailureManagement, and URCL
@@ -70,19 +68,60 @@ public class Robot extends CommandRobot implements Logged {
   }
 
   /**
-   * Configures subsystem default commands. Default commands are scheduled when no other command is
+   * Configures subsystem default commands. Default commands are scheduled when no
+   * other command is
    * running on a subsystem.
    */
   /** Configures trigger -> command bindings */
   private void configureBindings() {
-    // elevator moves up to the height appropriate for scoring in the large pole when 'A' is pressed
+    // elevator moves up to the height appropriate for scoring in the large pole
+    // when 'A' is pressed
     driver.a().onTrue(elevator.moveLarge());
 
-    // elevator moves up to the height appropriate for scoring in the large pole when 'B' is pressed
+    // elevator moves up to the height appropriate for scoring in the large pole
+    // when 'B' is pressed
     driver.b().onTrue(elevator.moveSmall());
 
-    // elevator moves up to the height appropriate for scoring in the large pole when 'X' is pressed
+    // elevator moves up to the height appropriate for scoring in the large pole
+    // when 'X' is pressed
     driver.x().onTrue(elevator.moveGround());
+  }
+
+  /**
+   * Runs at the beggining of teleop.
+   */
+  @Override
+  public void teleopInit() {
+
+  }
+
+  /**
+   * Runs periodically during teleop.
+   */
+  @Override
+  public void teleopPeriodic() {
+
+  }
+
+  /**
+   * Runs at the beggining of autonomous.
+   */
+  @Override
+  public void autonomousInit() {
+
+  }
+
+  /**
+   * Runs periodically during autonomous.
+   */
+  @Override
+  public void autonomousExit() {
+
+  }
+
+  @Override
+  public void autonomousPeriodic() {
+
   }
 
   @Override

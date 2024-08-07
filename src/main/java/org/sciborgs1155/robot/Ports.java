@@ -16,6 +16,8 @@ public final class Ports {
     public static final int REAR_LEFT_ENCODER_PIN = 14;
     public static final int FRONT_RIGHT_ENCODER_PIN = 16;
     public static final int REAR_RIGHT_ENCODER_PIN = 17;
+
+    public static final int GYRO = 18;
   }
 
   public static final class Elevator {
