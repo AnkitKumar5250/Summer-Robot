@@ -15,25 +15,23 @@ import monologue.Logged;
 import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
 import org.sciborgs1155.lib.CommandRobot;
-import org.sciborgs1155.robot.Ports.OI;
-import org.sciborgs1155.robot.drive.TankDrive;
+import org.sciborgs1155.robot.Ports.Operator;
 import org.sciborgs1155.robot.elevator.Elevator;
+import org.sciborgs1155.robot.tankdrive.TankDrive;
+
 
 /**
- * This class is where the bulk of the robot should be declared. Since
- * Command-based is a
- * "declarative" paradigm, very little robot logic should actually be handled in
- * the {@link Robot}
- * periodic methods (other than the scheduler calls). Instead, the structure of
- * the robot (including
+ * This class is where the bulk of the robot should be declared. Since Command-based is a
+ * "declarative" paradigm, very little robot logic should actually be handled in the {@link Robot}
+ * periodic methods (other than the scheduler calls). Instead, the structure of the robot (including
  * subsystems, commands, and trigger mappings) should be declared here.
  */
 public class Robot extends CommandRobot implements Logged {
 
   // INPUT DEVICES
   @SuppressWarnings("unused")
-  private final CommandXboxController operator = new CommandXboxController(OI.OPERATOR);
-  private final CommandXboxController driver = new CommandXboxController(OI.DRIVER);
+  private final CommandXboxController operator = new CommandXboxController(Operator.OPERATOR);
+  private final CommandXboxController driver = new CommandXboxController(Operator.DRIVER);
 
   // SUBSYSTEMS
   private final TankDrive drivetrain = new TankDrive();
@@ -68,12 +66,8 @@ public class Robot extends CommandRobot implements Logged {
     }
   }
 
-  /**
-   * Configures subsystem default commands. Default commands are scheduled when no
-   * other command is
-   * running on a subsystem.
-   */
-  /** Configures trigger -> command bindings */
+
+  /** Configures trigger -> command bindings. */
   private void configureBindings() {
     // elevator moves up to the height appropriate for scoring in the large pole
     // when 'A' is pressed
@@ -94,15 +88,8 @@ public class Robot extends CommandRobot implements Logged {
   @Override
   public void teleopInit() {
     // Starts driving based on driver input.
-    drivetrain.setDefaultCommand(Commands.runOnce(() -> drivetrain.drive(driver.getLeftY(), driver.getRightY())));
-  }
-
-  /**
-   * Runs periodically during teleop.
-   */
-  @Override
-  public void teleopPeriodic() {
-
+    drivetrain.setDefaultCommand(
+        Commands.runOnce(() -> drivetrain.drive(driver.getLeftY(), driver.getRightY())));
   }
 
   /**
@@ -111,19 +98,6 @@ public class Robot extends CommandRobot implements Logged {
   @Override
   public void autonomousInit() {
     CommandScheduler.getInstance().cancelAll();
-  }
-
-  /**
-   * Runs periodically during autonomous.
-   */
-  @Override
-  public void autonomousExit() {
-
-  }
-
-  @Override
-  public void autonomousPeriodic() {
-
   }
 
   @Override
