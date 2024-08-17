@@ -1,37 +1,26 @@
 package org.sciborgs1155.robot;
 
-/**
- * Contains Port identifiers for hardware.
- */
+import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.SwerveModulePorts;
+
+/** Contains Port identifiers for hardware. */
 public final class Ports {
-  /**
-   * Ports for controllers.
-   */
+  /** Ports for controllers. */
   public static final class Operator {
     public static final int OPERATOR = 0;
     public static final int DRIVER = 1;
   }
 
-  /**
-   * Ports for drivetrain.
-   */
+  /** Ports for drivetrain. */
   public static final class Drive {
-    public static final int FRONT_LEFT_DRIVE = 11;
-    public static final int REAR_LEFT_DRIVE = 10;
-    public static final int FRONT_RIGHT_DRIVE = 12;
-    public static final int REAR_RIGHT_DRIVE = 13;
+    public static final SwerveModulePorts FRONT_LEFT = new SwerveModulePorts();
+    public static final SwerveModulePorts FRONT_RIGHT = new SwerveModulePorts();
+    public static final SwerveModulePorts REAR_LEFT = new SwerveModulePorts();
+    public static final SwerveModulePorts REAR_RIGHT = new SwerveModulePorts();
 
-    public static final int FRONT_LEFT_ENCODER_PIN = 15;
-    public static final int REAR_LEFT_ENCODER_PIN = 14;
-    public static final int FRONT_RIGHT_ENCODER_PIN = 16;
-    public static final int REAR_RIGHT_ENCODER_PIN = 17;
-
-    public static final int GYRO = 18;
+    public static final int GYRO_ID = 0;
   }
 
-  /**
-   * Ports for elevator.
-   */
+  /** Ports for elevator. */
   public static final class Elevator {
     public static final int ELEVATOR_LEADER = 18;
     public static final int ELEVATOR_FOLLOWER = 19;

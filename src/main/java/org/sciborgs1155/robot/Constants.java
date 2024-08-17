@@ -1,7 +1,8 @@
 package org.sciborgs1155.robot;
 
-import static edu.wpi.first.units.Units.*;
-
+import static edu.wpi.first.units.Units.Centimeter;
+import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.Seconds;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.util.Units;
@@ -12,13 +13,11 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 
 /**
- * Constants is a globally accessible class for storing immutable values. Every
- * value should be
+ * Constants is a globally accessible class for storing immutable values. Every value should be
  * <code>public static final</code>.
  *
  * <p>
- * It is advised to statically import this class (or one of its inner classes)
- * wherever the
+ * It is advised to statically import this class (or one of its inner classes) wherever the
  * constants are needed, to reduce verbosity.
  *
  * @see Units
@@ -35,7 +34,7 @@ public class Constants {
   }
 
   // roborio tickrate (s)
-  public static final Measure<Time> PERIOD = Seconds.of(0.02); 
+  public static final Measure<Time> PERIOD = Seconds.of(0.02);
   public static final double DEADBAND = 0.15;
   public static final double SLOW_SPEED_MULTIPLIER = 0.33;
   public static final double FULL_SPEED_MULTIPLIER = 1.0;
@@ -53,9 +52,7 @@ public class Constants {
      * Returns whether the provided position is within the boundaries of the field.
      */
     public static boolean inField(Pose3d pose) {
-      return (pose.getX() > 0
-          && pose.getX() < Field.LENGTH.in(Meters)
-          && pose.getY() > 0
+      return (pose.getX() > 0 && pose.getX() < Field.LENGTH.in(Meters) && pose.getY() > 0
           && pose.getY() < Field.WIDTH.in(Meters));
     }
   }

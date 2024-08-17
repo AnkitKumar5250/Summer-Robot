@@ -2,19 +2,8 @@ package org.sciborgs1155.robot.tankdrive;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
-import static org.sciborgs1155.robot.Ports.Drive.FRONT_LEFT_DRIVE;
-import static org.sciborgs1155.robot.Ports.Drive.FRONT_LEFT_ENCODER_PIN;
-import static org.sciborgs1155.robot.Ports.Drive.FRONT_RIGHT_DRIVE;
-import static org.sciborgs1155.robot.Ports.Drive.FRONT_RIGHT_ENCODER_PIN;
-import static org.sciborgs1155.robot.Ports.Drive.GYRO;
-import static org.sciborgs1155.robot.Ports.Drive.REAR_LEFT_DRIVE;
-import static org.sciborgs1155.robot.Ports.Drive.REAR_RIGHT_DRIVE;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.DISTANCE_PER_ROTATION;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.INITIAL_ROBOT_POSE;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MINIMUM_DEGREE_THRESHOLD;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MINIMUM_DISTANCE_THRESHOLD;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.TURNING_RADIUS;
-
+import static org.sciborgs1155.robot.Ports.Drive.*;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.*;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.Follower;
@@ -38,17 +27,19 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public class TankDrive extends SubsystemBase {
   // instantiates motors
-  private final TalonFX frontLeft = new TalonFX(FRONT_LEFT_DRIVE);
-  private final TalonFX rearLeft = new TalonFX(REAR_LEFT_DRIVE);
-  private final TalonFX frontRight = new TalonFX(FRONT_RIGHT_DRIVE);
-  private final TalonFX rearRight = new TalonFX(REAR_RIGHT_DRIVE);
+  private final TalonFX frontLeft = new TalonFX(FRONT_LEFT.TRANSLATION_MOTOR_ID);
+  private final TalonFX rearLeft = new TalonFX(REAR_LEFT.TRANSLATION_MOTOR_ID);
+  private final TalonFX frontRight = new TalonFX(FRONT_RIGHT.TRANSLATION_MOTOR_ID);
+  private final TalonFX rearRight = new TalonFX(REAR_RIGHT.TRANSLATION_MOTOR_ID);
 
   // instantiates gyro
-  private final Pigeon2 gyro = new Pigeon2(GYRO);
+  private final Pigeon2 gyro = new Pigeon2(GYRO_ID);
 
   // instantiates encoders
-  private final DutyCycleEncoder leftEncoder = new DutyCycleEncoder(FRONT_LEFT_ENCODER_PIN);
-  private final DutyCycleEncoder rightEncoder = new DutyCycleEncoder(FRONT_RIGHT_ENCODER_PIN);
+  private final DutyCycleEncoder leftEncoder =
+      new DutyCycleEncoder(FRONT_LEFT.TRANSLATION_ENCODER_PIN);
+  private final DutyCycleEncoder rightEncoder =
+      new DutyCycleEncoder(FRONT_RIGHT.TRANSLATION_ENCODER_PIN);
 
   // instantiates PID controllers
   private final PIDController pidControllerTranslation = new PIDController(1, 0, 1);
@@ -114,7 +105,7 @@ public class TankDrive extends SubsystemBase {
 
   /**
    * Gets the robots current position on the field.
-
+   * 
    * @return the position of the robot.
    */
   public Pose2d getRobotPose() {
@@ -123,7 +114,7 @@ public class TankDrive extends SubsystemBase {
 
   /**
    * Stops the drivetrain.
-
+   * 
    * @return A command.
    */
   public Command stop() {
@@ -137,7 +128,7 @@ public class TankDrive extends SubsystemBase {
 
   /**
    * Drives based on driver input.
-
+   * 
    * @param leftY : Y value of left joystick.
    * @param rightY : y value of right joystick.
    * @return A command.
@@ -150,7 +141,7 @@ public class TankDrive extends SubsystemBase {
 
   /**
    * Drives the robot a certain distance.
-
+   * 
    * @param distance : distance to move the robot.
    * @return A command.
    */
@@ -173,7 +164,7 @@ public class TankDrive extends SubsystemBase {
 
   /**
    * Rotates the robot a certain amount of degrees.
-
+   * 
    * @param degrees : amount of degrees to rotate the robot.
    * @return A command.
    */

@@ -2,7 +2,11 @@ package org.sciborgs1155.robot;
 
 import static edu.wpi.first.units.Units.Seconds;
 import static org.sciborgs1155.robot.Constants.PERIOD;
-
+import org.littletonrobotics.urcl.URCL;
+import org.sciborgs1155.lib.CommandRobot;
+import org.sciborgs1155.robot.Ports.Operator;
+import org.sciborgs1155.robot.elevator.Elevator;
+import org.sciborgs1155.robot.tankdrive.TankDrive;
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.PowerDistribution;
@@ -13,11 +17,6 @@ import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import monologue.Logged;
 import monologue.Monologue;
-import org.littletonrobotics.urcl.URCL;
-import org.sciborgs1155.lib.CommandRobot;
-import org.sciborgs1155.robot.Ports.Operator;
-import org.sciborgs1155.robot.elevator.Elevator;
-import org.sciborgs1155.robot.tankdrive.TankDrive;
 
 
 /**

@@ -8,16 +8,8 @@ import static org.sciborgs1155.robot.Constants.Field.MEDUIM_POLE;
 import static org.sciborgs1155.robot.Ports.Elevator.ELEVATOR_ENCODER_PIN;
 import static org.sciborgs1155.robot.Ports.Elevator.ELEVATOR_FOLLOWER;
 import static org.sciborgs1155.robot.Ports.Elevator.ELEVATOR_LEADER;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.DISTANCE_PER_ROTATION;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.MINIMUM_VELOCITY_THRESHOLD;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.ka;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.kd;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.kg;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.ki;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.kp;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.ks;
-import static org.sciborgs1155.robot.elevator.ElevatorConstants.kv;
-
+import static org.sciborgs1155.robot.elevator.ElevatorConstants.*;
+import org.sciborgs1155.robot.elevator.ElevatorConstants.Elevation;
 import com.ctre.phoenix6.controls.DifferentialFollower;
 import com.ctre.phoenix6.hardware.TalonFX;
 import edu.wpi.first.math.controller.ElevatorFeedforward;
@@ -27,14 +19,12 @@ import edu.wpi.first.units.Measure;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
-import org.sciborgs1155.robot.elevator.ElevatorConstants.Elevation;
 
 
 /**
  * Elevator subsystem.
  */
 public class Elevator extends SubsystemBase {
-
   // Instantiates motors
   private final TalonFX leader = new TalonFX(ELEVATOR_LEADER);
   private final TalonFX follower = new TalonFX(ELEVATOR_FOLLOWER);
@@ -65,7 +55,7 @@ public class Elevator extends SubsystemBase {
 
   /**
    * Moves elevator to a certain elevation state.
-
+   * 
    * @param elevation : target elevation
    */
   private Command move(Elevation elevation) {
@@ -96,7 +86,7 @@ public class Elevator extends SubsystemBase {
 
   /**
    * Moves the elevator to the altitude for scoring in the small pole.
-
+   * 
    * @return A command.
    */
   public Command moveSmall() {
@@ -105,7 +95,7 @@ public class Elevator extends SubsystemBase {
 
   /**
    * Moves the elevator to the altitude for scoring in the large pole.
-
+   * 
    * @return A command.
    */
   public Command moveLarge() {
@@ -114,7 +104,7 @@ public class Elevator extends SubsystemBase {
 
   /**
    * Moves the elevator to the default position.
-
+   * 
    * @return A command.
    */
   public Command moveGround() {
