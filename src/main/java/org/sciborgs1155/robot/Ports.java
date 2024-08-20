@@ -1,6 +1,6 @@
 package org.sciborgs1155.robot;
 
-import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.SwerveModulePorts;
+import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.SwerveModuleConfig;
 
 /** Contains Port identifiers for hardware. */
 public final class Ports {
@@ -12,10 +12,10 @@ public final class Ports {
 
   /** Ports for drivetrain. */
   public static final class Drive {
-    public static final SwerveModulePorts FRONT_LEFT = new SwerveModulePorts();
-    public static final SwerveModulePorts FRONT_RIGHT = new SwerveModulePorts();
-    public static final SwerveModulePorts REAR_LEFT = new SwerveModulePorts();
-    public static final SwerveModulePorts REAR_RIGHT = new SwerveModulePorts();
+    public static final SwerveModuleConfig FRONT_LEFT = new SwerveModuleConfig();
+    public static final SwerveModuleConfig FRONT_RIGHT = new SwerveModuleConfig();
+    public static final SwerveModuleConfig REAR_LEFT = new SwerveModuleConfig();
+    public static final SwerveModuleConfig REAR_RIGHT = new SwerveModuleConfig();
 
     public static final int GYRO_ID = 0;
   }

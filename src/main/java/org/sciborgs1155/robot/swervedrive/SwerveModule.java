@@ -3,10 +3,14 @@ package org.sciborgs1155.robot.swervedrive;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Radians;
 import static edu.wpi.first.units.Units.Volts;
-import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.DISTANCE_PER_ROTATION;
-import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.RADIANS_PER_ROTATION;
-import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.SwerveModulePorts;
+import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.MAXIMUM_MOTOR_VOLTAGE;
+import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.MINIMUM_MOTOR_VOLTAGE;
+import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.TRACK_WIDTH;
+import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.SwerveModuleConfig;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.units.Angle;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
@@ -23,29 +27,42 @@ public class SwerveModule extends SubsystemBase {
   /** Motor used for rotation. */
   private TalonFX rotation;
 
+  /** Location of the swerve drive module relative to the robot center. */
+  private Translation2d location;
+
+  /** Absolute position of the swerve module(orientation and distance traveled). */
+  private SwerveModulePosition position;
+
   /** Encoder for translation motor. */
   private DutyCycleEncoder translationEncoder;
 
   /** Encoder for rotation motor. */
   private DutyCycleEncoder rotationEncoder;
 
+
+
   /**
    * Instantiates Swerve module.
    * 
-   * @param ports : Configures the swerve module with hardware ID's.
+   * @param config : Configures the swerve module with hardware ID's.
    */
-  public SwerveModule(SwerveModulePorts ports) {
+  public SwerveModule(SwerveModuleConfig config) {
     // Retrieves and assigns correct device ID's based on motor position.
-    translation = ports.getTranslationMotor();
-    rotation = ports.getRotationMotor();
+    translation = config.getTranslationMotor();
+    rotation = config.getRotationMotor();
 
     // Applies default hardware configuration to motors.
     translation.getConfigurator().apply(SwerveDriveConstants.defaultConfiguration);
     rotation.getConfigurator().apply(SwerveDriveConstants.defaultConfiguration);
 
     // Sets the distance per one rotation of the motors.
-    translationEncoder.setDistancePerRotation(DISTANCE_PER_ROTATION.in(Meters));
-    rotationEncoder.setDistancePerRotation(RADIANS_PER_ROTATION.in(Radians));
+    translationEncoder.setDistancePerRotation(TRACK_WIDTH.in(Meters) * Math.PI * 2);
+    rotationEncoder.setDistancePerRotation(Math.PI * 2);
+
+    // Instantiates position and location.
+    position = new SwerveModulePosition(getDistanceEncoder(),
+        Rotation2d.fromRadians(getAngleEncoder().in(Radians)));
+    location = config.getRelativeLocation();
   }
 
   /**
@@ -55,7 +72,19 @@ public class SwerveModule extends SubsystemBase {
    * @return Command.
    */
   public Command setTranslationVoltage(Measure<Voltage> volts) {
-    return runOnce(() -> translation.setVoltage(volts.in(Volts)));
+    // Clamps voltage value to be within certain limits.
+    if (volts.gt(MAXIMUM_MOTOR_VOLTAGE)) {
+      volts = MAXIMUM_MOTOR_VOLTAGE;
+    }
+    if (volts.lt(MINIMUM_MOTOR_VOLTAGE)) {
+      volts = MINIMUM_MOTOR_VOLTAGE;
+    }
+
+    // Clamped voltage value.
+    final Measure<Voltage> cvolts = volts;
+
+    // Returns a command that sets the motor voltage.
+    return runOnce(() -> translation.setVoltage(cvolts.in(Volts)));
   }
 
   /**
@@ -65,7 +94,19 @@ public class SwerveModule extends SubsystemBase {
    * @return Command.
    */
   public Command setRotationVoltage(Measure<Voltage> volts) {
-    return runOnce(() -> rotation.setVoltage(volts.in(Volts)));
+    // Clamps voltage value to be within certain limits.
+    if (volts.gt(MAXIMUM_MOTOR_VOLTAGE)) {
+      volts = MAXIMUM_MOTOR_VOLTAGE;
+    }
+    if (volts.lt(MINIMUM_MOTOR_VOLTAGE)) {
+      volts = MINIMUM_MOTOR_VOLTAGE;
+    }
+
+    // Clamped voltage value.
+    final Measure<Voltage> cvolts = volts;
+
+    // Returns a command that sets the motor voltage.
+    return runOnce(() -> rotation.setVoltage(cvolts.in(Volts)));
   }
 
 
@@ -74,7 +115,7 @@ public class SwerveModule extends SubsystemBase {
    * 
    * @return distance.
    */
-  public Measure<Distance> getDistanceDisplacement() {
+  public Measure<Distance> getDistanceEncoder() {
     return Meters.of(translationEncoder.getDistance());
   }
 
@@ -83,8 +124,35 @@ public class SwerveModule extends SubsystemBase {
    * 
    * @return angle.
    */
-  public Measure<Angle> getAngleDisplacement() {
+  public Measure<Angle> getAngleEncoder() {
     return Radians.of(rotationEncoder.getDistance());
   }
 
+  /**
+   * Returns the relative location of the module compared to the orgin of the robot.
+   * 
+   * @return Translation representing a coordinate with the robot orgin being (0,0)
+   */
+  public Translation2d getRelativeLocation() {
+    return location;
+  }
+
+  /**
+   * Returns the absolute location and orientation of the module compared to the original position
+   * it was in.
+   * 
+   * @return position.
+   */
+  public SwerveModulePosition getAbsolutePosition() {
+    return position;
+  }
+
+  /**
+   * Converts robot-relative vector to a module-relative vector.
+   * @param absoluteVector : vector representing a velocity and direction for a module relative to the robot.
+   * @return vector representing a velocity and direction relative to the module.
+   */
+  public Translation2d getRelativeVector(Translation2d absoluteVector) {
+    return absoluteVector;
+  }
 }

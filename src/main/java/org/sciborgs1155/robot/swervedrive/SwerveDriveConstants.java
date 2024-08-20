@@ -1,8 +1,6 @@
 package org.sciborgs1155.robot.swervedrive;
 
-import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Radians;
-import static edu.wpi.first.units.Units.Volts;
+import static edu.wpi.first.units.Units.*;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.hardware.TalonFX;
@@ -10,6 +8,7 @@ import com.ctre.phoenix6.signals.NeutralModeValue;
 import edu.wpi.first.math.controller.PIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.units.Angle;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
@@ -47,6 +46,29 @@ public class SwerveDriveConstants {
    * PID constants for rotational motion.
    */
   public static final class RotationPID {
+    /** Proportional coefficient */
+    public static final double P = 0;
+    /** Integral coefficient */
+    public static final double I = 0;
+    /** Derivative coefficient */
+    public static final double D = 0;
+
+    /**
+     * Returns an instance of the controller with tuned constants.
+     * 
+     * @return PID controller with tuned constants.
+     */
+    public static final PIDController getController() {
+      PIDController controller = new PIDController(P, I, D);
+      controller.setTolerance(ANGLE_TOLERANCE.in(Radians));
+      return controller;
+    }
+  }
+
+  /**
+   * PID constants for calculating voltage from velocity setpoint.
+   */
+  public static final class VoltagePID {
     /** Proportional coefficient */
     public static final double P = 0;
     /** Integral coefficient */
@@ -109,10 +131,10 @@ public class SwerveDriveConstants {
   }
 
   /** Maximum voltage attainable by the motors in the drivetrain. */
-  public static final Measure<Voltage> MAX_MOTOR_VOLTAGE = Volts.of(0);
+  public static final Measure<Voltage> MAXIMUM_MOTOR_VOLTAGE = Volts.of(0);
 
   /** Minimum voltage attainable by the motors in the drivetrain. */
-  public static final Measure<Voltage> MIN_MOTOR_VOLTAGE = Volts.of(0);
+  public static final Measure<Voltage> MINIMUM_MOTOR_VOLTAGE = Volts.of(0);
 
   /** Default motor configuration(but motors brake instead of coast) */
   public static final TalonFXConfiguration defaultConfiguration = new TalonFXConfiguration()
@@ -124,19 +146,13 @@ public class SwerveDriveConstants {
   /** Maximum acceptable error in angle(for PID controllers) */
   public static final Measure<Angle> ANGLE_TOLERANCE = Radians.of(0);
 
-  /** Distance traveled per one rotation of a motor */
-  public static final Measure<Distance> DISTANCE_PER_ROTATION = Meters.of(0);
-
-  /** Radians rotated per one rotation of a motor */
-  public static final Measure<Angle> RADIANS_PER_ROTATION = Radians.of(Math.PI * 2);
-
   /** Refers to the position of the module on the drivetrain. Used for initializing modules. */
   public static enum ModulePosition {
     FRONT_LEFT, FRONT_RIGHT, REAR_LEFT, REAR_RIGHT
   }
 
-  /** Interface for swerve module ports. */
-  public static class SwerveModulePorts {
+  /** Interface for swerve module configuration. */
+  public static class SwerveModuleConfig {
     /** ID of the translation motor. */
     public int TRANSLATION_MOTOR_ID = 0;
 
@@ -148,6 +164,12 @@ public class SwerveDriveConstants {
 
     /** Encoder pin of the rotation encoder. */
     public int ROTATION_ENCODER_PIN = 0;
+
+    /** X coordinate of the module relative to robot orgin. */
+    public Measure<Distance> xLocation;
+
+    /** Y coordinate of the module relative to robot orgin. */
+    public Measure<Distance> ylocation;
 
     /** Returns an instance of the translation motor. */
     public TalonFX getTranslationMotor() {
@@ -169,13 +191,23 @@ public class SwerveDriveConstants {
       return new DutyCycleEncoder(ROTATION_ENCODER_PIN);
     }
 
-    public SwerveModulePorts() {}
+    /** Returns a Translation2D representing the modules position relative to the orgin. */
+    public Translation2d getRelativeLocation() {
+      return new Translation2d(xLocation, ylocation);
+    }
+
+    public SwerveModuleConfig() {}
+  }
+
+  /** Interface for inputting directional and translation commands into modules. */
+  public static class SwerveModuleCommand {
+    
   }
 
   /** Distance between the outer edges of the left and right wheels */
   public static final Measure<Distance> TRACK_WIDTH = Meters.of(0);
 
-  /** Initial robot pose*/
+  /** Initial robot pose */
   public static final Pose2d INITIAL_ROBOT_POSE = new Pose2d();
 
 }
