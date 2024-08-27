@@ -1,19 +1,26 @@
 package org.sciborgs1155.robot.swervedrive;
 
 import static edu.wpi.first.units.Units.Meters;
-import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.MAXIMUM_MOTOR_VOLTAGE;
 import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.MINIMUM_MOTOR_VOLTAGE;
 import static org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.TRACK_WIDTH;
+import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.RotationFFD;
 import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.SwerveModuleConfig;
+import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.TranslationFFD;
+import org.sciborgs1155.robot.swervedrive.SwerveDriveConstants.VoltagePID;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.SwerveModulePosition;
 import edu.wpi.first.units.Angle;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
+import edu.wpi.first.units.Velocity;
 import edu.wpi.first.units.Voltage;
 import edu.wpi.first.wpilibj.DutyCycleEncoder;
 import edu.wpi.first.wpilibj2.command.Command;
@@ -39,7 +46,17 @@ public class SwerveModule extends SubsystemBase {
   /** Encoder for rotation motor. */
   private DutyCycleEncoder rotationEncoder;
 
+  /** FFD controller used for translation(calculates voltage from velocity). */
+  private SimpleMotorFeedforward translationFeedforward;
 
+  /** FFD controller used for rotation(calculates voltage from velocity). */
+  private SimpleMotorFeedforward rotationFeedforward;
+
+  /** PID controller used for converting velocity setpoints to voltage outputs. */
+  private PIDController voltagePID;
+
+  /** Vector representing the target state of the module */
+  private Translation2d targetVector;
 
   /**
    * Instantiates Swerve module.
@@ -47,6 +64,13 @@ public class SwerveModule extends SubsystemBase {
    * @param config : Configures the swerve module with hardware ID's.
    */
   public SwerveModule(SwerveModuleConfig config) {
+    // Instantiates Feedforward.
+    translationFeedforward = TranslationFFD.getController();
+    rotationFeedforward = RotationFFD.getController();
+
+    // Instantiates PID.
+    voltagePID = VoltagePID.getController();
+
     // Retrieves and assigns correct device ID's based on motor position.
     translation = config.getTranslationMotor();
     rotation = config.getRotationMotor();
@@ -60,31 +84,22 @@ public class SwerveModule extends SubsystemBase {
     rotationEncoder.setDistancePerRotation(Math.PI * 2);
 
     // Instantiates position and location.
-    position = new SwerveModulePosition(getDistanceEncoder(),
-        Rotation2d.fromRadians(getAngleEncoder().in(Radians)));
+    position = new SwerveModulePosition(translationEncoder.getDistance(),
+        Rotation2d.fromRadians(rotationEncoder.getDistance()));
     location = config.getRelativeLocation();
+
   }
 
   /**
-   * Sets the voltage of the translational motor.
+   * Sets the voltage of the Translation motor.
    * 
    * @param volts : target voltage.
    * @return Command.
    */
-  public Command setTranslationVoltage(Measure<Voltage> volts) {
+  private Command setTranslationVoltage(Measure<Voltage> volts) {
     // Clamps voltage value to be within certain limits.
-    if (volts.gt(MAXIMUM_MOTOR_VOLTAGE)) {
-      volts = MAXIMUM_MOTOR_VOLTAGE;
-    }
-    if (volts.lt(MINIMUM_MOTOR_VOLTAGE)) {
-      volts = MINIMUM_MOTOR_VOLTAGE;
-    }
-
-    // Clamped voltage value.
-    final Measure<Voltage> cvolts = volts;
-
-    // Returns a command that sets the motor voltage.
-    return runOnce(() -> translation.setVoltage(cvolts.in(Volts)));
+    return runOnce(() -> translation.setVoltage(MathUtil.clamp(volts.in(Volts),
+        MAXIMUM_MOTOR_VOLTAGE.in(Volts), MINIMUM_MOTOR_VOLTAGE.in(Volts))));
   }
 
   /**
@@ -93,39 +108,10 @@ public class SwerveModule extends SubsystemBase {
    * @param volts : target voltage.
    * @return Command.
    */
-  public Command setRotationVoltage(Measure<Voltage> volts) {
+  private Command setRotationVoltage(Measure<Voltage> volts) {
     // Clamps voltage value to be within certain limits.
-    if (volts.gt(MAXIMUM_MOTOR_VOLTAGE)) {
-      volts = MAXIMUM_MOTOR_VOLTAGE;
-    }
-    if (volts.lt(MINIMUM_MOTOR_VOLTAGE)) {
-      volts = MINIMUM_MOTOR_VOLTAGE;
-    }
-
-    // Clamped voltage value.
-    final Measure<Voltage> cvolts = volts;
-
-    // Returns a command that sets the motor voltage.
-    return runOnce(() -> rotation.setVoltage(cvolts.in(Volts)));
-  }
-
-
-  /**
-   * Returns the distance traveled(from encoder).
-   * 
-   * @return distance.
-   */
-  public Measure<Distance> getDistanceEncoder() {
-    return Meters.of(translationEncoder.getDistance());
-  }
-
-  /**
-   * Returns the angle rotated(from encoder).
-   * 
-   * @return angle.
-   */
-  public Measure<Angle> getAngleEncoder() {
-    return Radians.of(rotationEncoder.getDistance());
+    return runOnce(() -> rotation.setVoltage(MathUtil.clamp(volts.in(Volts),
+        MAXIMUM_MOTOR_VOLTAGE.in(Volts), MINIMUM_MOTOR_VOLTAGE.in(Volts))));
   }
 
   /**
@@ -147,12 +133,14 @@ public class SwerveModule extends SubsystemBase {
     return position;
   }
 
-  /**
-   * Converts robot-relative vector to a module-relative vector.
-   * @param absoluteVector : vector representing a velocity and direction for a module relative to the robot.
-   * @return vector representing a velocity and direction relative to the module.
-   */
-  public Translation2d getRelativeVector(Translation2d absoluteVector) {
-    return absoluteVector;
+  /** Sets the target vector. */
+  public void setTargetVector(Translation2d targetVector) {
+    this.targetVector = targetVector;
   }
+
+  /** Applies vector setpoint to the module.*/
+  public void apply() {
+    
+  }
+
 }

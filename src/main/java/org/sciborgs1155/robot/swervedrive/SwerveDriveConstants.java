@@ -171,6 +171,9 @@ public class SwerveDriveConstants {
     /** Y coordinate of the module relative to robot orgin. */
     public Measure<Distance> ylocation;
 
+    /** Unit vector for rotational movement of the robot */
+    public Translation2d rotationalUnitVector;
+
     /** Returns an instance of the translation motor. */
     public TalonFX getTranslationMotor() {
       return new TalonFX(TRANSLATION_MOTOR_ID);
@@ -196,12 +199,20 @@ public class SwerveDriveConstants {
       return new Translation2d(xLocation, ylocation);
     }
 
-    public SwerveModuleConfig() {}
-  }
+    /**
+     * Returns unit vector for rotational movement of the robot.
+     * 
+     * @return vector.
+     */
+    public Translation2d getRotationalUnitVector() {
+      return rotationalUnitVector;
+    }
 
-  /** Interface for inputting directional and translation commands into modules. */
-  public static class SwerveModuleCommand {
-    
+
+    /** Instantiates constants. */
+    public SwerveModuleConfig() {
+
+    }
   }
 
   /** Distance between the outer edges of the left and right wheels */
