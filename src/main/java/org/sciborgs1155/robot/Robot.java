@@ -9,12 +9,12 @@ import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
-import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import monologue.Logged;
 import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
 import org.sciborgs1155.lib.CommandRobot;
+import org.sciborgs1155.lib.GameTime;
 import org.sciborgs1155.robot.Ports.Operator;
 import org.sciborgs1155.robot.elevator.Elevator;
 import org.sciborgs1155.robot.tankdrive.TankDrive;
@@ -29,19 +29,21 @@ import org.sciborgs1155.robot.tankdrive.TankDrive;
 public class Robot extends CommandRobot implements Logged {
 
   // INPUT DEVICES
-  @SuppressWarnings("unused")
   private final CommandXboxController operator = new CommandXboxController(Operator.OPERATOR);
   private final CommandXboxController driver = new CommandXboxController(Operator.DRIVER);
 
   // SUBSYSTEMS
-  private final TankDrive drivetrain = new TankDrive();
+  private final TankDrive drivetrain = TankDrive.real();
   private final Elevator elevator = new Elevator();
+
+  // TIMER
+  private final GameTime gameTime = new GameTime();
+
 
   /** The robot contains subsystems, OI devices, and commands. */
   public Robot() {
     super(PERIOD.in(Seconds));
     configureGameBehavior();
-    configureBindings();
   }
 
   /** Configures basic behavior during different parts of the game. */
@@ -51,17 +53,21 @@ public class Robot extends CommandRobot implements Logged {
     Monologue.setupMonologue(this, "/Robot", false, true);
     addPeriodic(Monologue::updateAll, PERIOD.in(Seconds));
 
+    // Adds sceduled commands to dashboard.
     SmartDashboard.putData(CommandScheduler.getInstance());
 
     // Log PDH
     SmartDashboard.putData("PDH", new PowerDistribution());
 
+    // Sets the brownout voltage of the robot.
     RobotController.setBrownoutVoltage(6.0);
+
+    // Starts timer.
+    gameTime.start();
 
     if (isReal()) {
       URCL.start();
     } else {
-      DriverStation.silenceJoystickConnectionWarning(true);
       DriverStation.silenceJoystickConnectionWarning(true);
     }
   }
@@ -71,25 +77,33 @@ public class Robot extends CommandRobot implements Logged {
   private void configureBindings() {
     // elevator moves up to the height appropriate for scoring in the large pole
     // when 'A' is pressed
-    driver.a().onTrue(elevator.moveLarge());
+    operator.a().onTrue(elevator.moveLarge());
 
     // elevator moves up to the height appropriate for scoring in the large pole
     // when 'B' is pressed
-    driver.b().onTrue(elevator.moveSmall());
+    operator.b().onTrue(elevator.moveSmall());
 
     // elevator moves up to the height appropriate for scoring in the large pole
     // when 'X' is pressed
-    driver.x().onTrue(elevator.moveGround());
+    operator.x().onTrue(elevator.moveGround());
+  }
+
+  @Override
+  public void teleopInit() {
+    // Cancels all running commands at the beggining of teleop.
+    CommandScheduler.getInstance().cancelAll();
+
+    // Configures button bindings.
+    configureBindings();
   }
 
   /**
    * Runs at the beggining of teleop.
    */
   @Override
-  public void teleopInit() {
-    // Starts driving based on driver input.
-    drivetrain.setDefaultCommand(
-        Commands.runOnce(() -> drivetrain.drive(driver.getLeftY(), driver.getRightY())));
+  public void teleopPeriodic() {
+    // Updates voltages based on driver input.
+    drivetrain.drive(driver.getLeftY(), driver.getRightY());
   }
 
   /**
@@ -97,6 +111,7 @@ public class Robot extends CommandRobot implements Logged {
    */
   @Override
   public void autonomousInit() {
+    // Cancels all running commands at the beggining of autonomous.
     CommandScheduler.getInstance().cancelAll();
   }
 

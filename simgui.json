@@ -1,0 +1,72 @@
+{
+  "HALProvider": {
+    "Other Devices": {
+      "DutyCycleEncoder[0]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[18]/Fwd Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[18]/Rev Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[18]/Rotor Sensor": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[19]": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[19]/Fwd Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[19]/Rev Limit": {
+        "header": {
+          "open": true
+        }
+      },
+      "Talon FX (v6)[19]/Rotor Sensor": {
+        "header": {
+          "open": true
+        }
+      }
+    }
+  },
+  "NTProvider": {
+    "types": {
+      "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Drivetrain Sim": "Field2d",
+      "/SmartDashboard/Scheduler": "Scheduler"
+    }
+  },
+  "NetworkTables": {
+    "transitory": {
+      "SmartDashboard": {
+        "open": true
+      }
+    }
+  },
+  "NetworkTables Info": {
+    "Clients": {
+      "open": true
+    },
+    "Connections": {
+      "open": true
+    },
+    "Server": {
+      "open": true
+    },
+    "visible": true
+  }
+}

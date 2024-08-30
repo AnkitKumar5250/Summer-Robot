@@ -2,33 +2,47 @@ package org.sciborgs1155.robot.tankdrive;
 
 import static edu.wpi.first.units.Units.Degrees;
 import static edu.wpi.first.units.Units.Meters;
+import static edu.wpi.first.units.Units.MetersPerSecond;
+import static edu.wpi.first.units.Units.Radians;
+import static edu.wpi.first.units.Units.RadiansPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 import static org.sciborgs1155.robot.Ports.Drive.FRONT_LEFT_DRIVE;
-import static org.sciborgs1155.robot.Ports.Drive.FRONT_LEFT_ENCODER_PIN;
 import static org.sciborgs1155.robot.Ports.Drive.FRONT_RIGHT_DRIVE;
-import static org.sciborgs1155.robot.Ports.Drive.FRONT_RIGHT_ENCODER_PIN;
 import static org.sciborgs1155.robot.Ports.Drive.GYRO;
 import static org.sciborgs1155.robot.Ports.Drive.REAR_LEFT_DRIVE;
 import static org.sciborgs1155.robot.Ports.Drive.REAR_RIGHT_DRIVE;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.DISTANCE_PER_ROTATION;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.INITIAL_ROBOT_POSE;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MAX_ACCELERATION;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MAX_VELOCITY;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MINIMUM_DEGREE_THRESHOLD;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MINIMUM_DISTANCE_THRESHOLD;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.TURNING_RADIUS;
-
-import com.ctre.phoenix6.configs.Pigeon2Configuration;
-import com.ctre.phoenix6.configs.TalonFXConfiguration;
-import com.ctre.phoenix6.controls.Follower;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.TRACK_WIDTH;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.defaultGyroConfiguration;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kAA;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kAS;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kAV;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kDD;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kDR;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kID;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kIR;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kLA;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kLS;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kLV;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kPD;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kPR;
 import com.ctre.phoenix6.hardware.Pigeon2;
-import com.ctre.phoenix6.hardware.TalonFX;
-import com.ctre.phoenix6.signals.NeutralModeValue;
-import edu.wpi.first.math.controller.PIDController;
+import edu.wpi.first.math.controller.ProfiledPIDController;
+import edu.wpi.first.math.controller.SimpleMotorFeedforward;
+import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
-import edu.wpi.first.math.kinematics.DifferentialDriveOdometry;
-import edu.wpi.first.math.kinematics.DifferentialDriveWheelPositions;
+import edu.wpi.first.math.geometry.Translation2d;
+import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
+import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
 import edu.wpi.first.units.Angle;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
-import edu.wpi.first.wpilibj.DutyCycleEncoder;
+import edu.wpi.first.units.Velocity;
+import edu.wpi.first.units.Voltage;
 import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
@@ -37,161 +51,206 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  * Tank drivetrain Subsystem.
  */
 public class TankDrive extends SubsystemBase {
-  // instantiates motors
-  private final TalonFX frontLeft = new TalonFX(FRONT_LEFT_DRIVE);
-  private final TalonFX rearLeft = new TalonFX(REAR_LEFT_DRIVE);
-  private final TalonFX frontRight = new TalonFX(FRONT_RIGHT_DRIVE);
-  private final TalonFX rearRight = new TalonFX(REAR_RIGHT_DRIVE);
+  /** TankIO */
+  private TankIO motors;
 
-  // instantiates gyro
-  private final Pigeon2 gyro = new Pigeon2(GYRO);
+  /** Gyroscope */
+  private Pigeon2 gyro;
 
-  // instantiates encoders
-  private final DutyCycleEncoder leftEncoder = new DutyCycleEncoder(FRONT_LEFT_ENCODER_PIN);
-  private final DutyCycleEncoder rightEncoder = new DutyCycleEncoder(FRONT_RIGHT_ENCODER_PIN);
+  /** Used for inputting voltages into TankIO. */
+  private DifferentialDrive differentialDrive;
 
-  // instantiates PID controllers
-  private final PIDController pidControllerTranslation = new PIDController(1, 0, 1);
-  private final PIDController pidControllerRotation = new PIDController(1, 0, 1);
+  /** PID controller for translational motion. */
+  private final ProfiledPIDController pidControllerDrive =
+      new ProfiledPIDController(kPD, kID, kDD, new Constraints(MAX_VELOCITY, MAX_ACCELERATION));
 
-  // instantiates differential drive
-  private final DifferentialDrive differentialDrive =
-      new DifferentialDrive(frontLeft::setVoltage, frontRight::setVoltage);
+  /** PID controller for rotational motion. */
+  private final ProfiledPIDController pidControllerRotation =
+      new ProfiledPIDController(kPR, kIR, kDR, new Constraints(MAX_VELOCITY, MAX_ACCELERATION));
 
-  // instantiates Odometry classes
-  private final DifferentialDriveOdometry differentialDriveOdometry = new DifferentialDriveOdometry(
-      gyro.getRotation2d(), Meters.of(0), Meters.of(0), INITIAL_ROBOT_POSE);
+  /** PID controller for voltage. */
+  private final ProfiledPIDController pidControllerVoltage =
+      new ProfiledPIDController(kPR, kIR, kDR, new Constraints(MAX_VELOCITY, MAX_ACCELERATION));
+
+  /** FFD controller for translational motion. */
+  private final SimpleMotorFeedforward feedforwardDrive = new SimpleMotorFeedforward(kLS, kLV, kLA);
+
+  /** FFD controller rotational motion. */
+  private final SimpleMotorFeedforward feedforwardRotation =
+      new SimpleMotorFeedforward(kAS, kAV, kAA);
+
+  /** Kinematics of the drivetrain. */
+  private final DifferentialDriveKinematics kinematics =
+      new DifferentialDriveKinematics(TRACK_WIDTH);
+
+  /** Used to track robot position. */
+  private final DifferentialDrivePoseEstimator differentialDriveOdometry =
+      new DifferentialDrivePoseEstimator(kinematics, gyro.getRotation2d(), 0, 0,
+          INITIAL_ROBOT_POSE);
+
+  public static TankDrive sim() {
+    return new TankDrive(
+        SimTank.create(FRONT_LEFT_DRIVE, REAR_LEFT_DRIVE, FRONT_RIGHT_DRIVE, REAR_RIGHT_DRIVE),
+        false);
+  }
+
+  public static TankDrive fake() {
+    return new TankDrive(
+        FakeTank.create(FRONT_LEFT_DRIVE, REAR_LEFT_DRIVE, FRONT_RIGHT_DRIVE, REAR_RIGHT_DRIVE),
+        false);
+  }
+
+  public static TankDrive real() {
+    return new TankDrive(
+        RealTank.create(FRONT_LEFT_DRIVE, REAR_LEFT_DRIVE, FRONT_RIGHT_DRIVE, REAR_RIGHT_DRIVE),
+        true);
+  }
 
   /**
    * Instantiates drivetrain.
    */
-  public TankDrive() {
-    // Creates a new instance of the default talon configuration.
-    TalonFXConfiguration defaultConfiguration = new TalonFXConfiguration();
+  private TankDrive(TankIO motors, boolean isReal) {
+    // Instantiates everything.
+    if (isReal) {
+      this.gyro = new Pigeon2(GYRO);
+    }
+    this.motors = motors;
 
-    // Creates a new instance of the default gyro configuration.
-    final Pigeon2Configuration defaultGyroConfiguration = new Pigeon2Configuration();
-
-    // Applies default talon configuration to motors.
-    frontLeft.getConfigurator().apply(defaultConfiguration);
-    frontRight.getConfigurator().apply(defaultConfiguration);
-    rearLeft.getConfigurator().apply(defaultConfiguration);
-    rearRight.getConfigurator().apply(defaultConfiguration);
-
-    defaultConfiguration.MotorOutput.NeutralMode = NeutralModeValue.Brake;
-
-    frontLeft.getConfigurator().apply(defaultConfiguration);
-    frontRight.getConfigurator().apply(defaultConfiguration);
-    rearLeft.getConfigurator().apply(defaultConfiguration);
-    rearRight.getConfigurator().apply(defaultConfiguration);
+    this.differentialDrive = new DifferentialDrive(motors::setLeftVoltage, motors::setRightVoltage);
 
     // Applies default gyro configuration.
     gyro.getConfigurator().apply(defaultGyroConfiguration);
 
-    // Sets leaders and followers
-    frontLeft.setControl(new Follower(rearLeft.getDeviceID(), false));
-    frontRight.setControl(new Follower(rearRight.getDeviceID(), false));
-
     // Sets the right to be inverted
-    frontRight.setInverted(true);
-
-    // Sets the distance per one rotation of the motors
-    leftEncoder.setDistancePerRotation(DISTANCE_PER_ROTATION.in(Meters));
-    rightEncoder.setDistancePerRotation(DISTANCE_PER_ROTATION.in(Meters));
+    motors.setRightInverted(true);
 
     // Sets the tolerance of pid controllers
-    pidControllerTranslation.setTolerance(MINIMUM_DISTANCE_THRESHOLD.in(Meters));
+    pidControllerDrive.setTolerance(MINIMUM_DISTANCE_THRESHOLD.in(Meters));
     pidControllerRotation.setTolerance(MINIMUM_DEGREE_THRESHOLD.in(Degrees));
 
     // Sets the default command to stop
-    setDefaultCommand(run(() -> {
-      frontRight.setVoltage(
-          pidControllerTranslation.calculate(frontRight.getVelocity().getValueAsDouble(), 0));
-      frontLeft.setVoltage(
-          pidControllerTranslation.calculate(frontLeft.getVelocity().getValueAsDouble(), 0));
-    }));
+    setDefaultCommand(motors.defaultCommand());
   }
 
   /**
    * Gets the robots current position on the field.
-
-   * @return the position of the robot.
+   * 
+   * @return The position of the robot.
    */
   public Pose2d getRobotPose() {
-    return differentialDriveOdometry.getPoseMeters();
+    return differentialDriveOdometry.getEstimatedPosition();
+  }
+
+  /**
+   * Gets the robots current position on the field.
+   * 
+   * @return The position of the robot.
+   */
+  public Translation2d getRobotPosition() {
+    return differentialDriveOdometry.getEstimatedPosition().getTranslation();
+  }
+
+  /**
+   * Gets the robots current orientation.
+   * 
+   * @return The orientation of the robot(counterclockwise).
+   */
+  public Measure<Angle> getRobotOrientation() {
+    return Degrees.of(gyro.getAngle());
+  }
+
+  /**
+   * Returns distance traveled by the drivetrain(accounts for backwards travel).
+   * 
+   * @return Distance.
+   */
+  private Measure<Distance> getPosition() {
+    return motors.getLeftDistance().plus(motors.getRightDistance()).divide(2);
+  }
+
+  private Command updateRobotPose() {
+    return runOnce(() -> differentialDriveOdometry.update(gyro.getRotation2d(),
+        motors.getLeftDistance().in(Meters), motors.getRightDistance().in(Meters)));
   }
 
   /**
    * Stops the drivetrain.
-
+   * 
    * @return A command.
    */
   public Command stop() {
-    return runOnce(() -> {
-      frontRight.stopMotor();
-      frontLeft.stopMotor();
-    }).andThen(runOnce(() -> {
-      differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
-    }));
+    return runOnce(() -> motors.stop()).andThen(runOnce(() -> updateRobotPose()));
   }
 
   /**
    * Drives based on driver input.
-
+   * 
    * @param leftY : Y value of left joystick.
    * @param rightY : y value of right joystick.
    * @return A command.
    */
   public Command drive(double leftY, double rightY) {
-    return run(() -> differentialDrive.tankDrive(leftY, rightY)).alongWith(run(() -> {
-      differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
-    }));
+    return run(() -> differentialDrive.tankDrive(leftY, rightY)).alongWith(updateRobotPose());
   }
 
   /**
    * Drives the robot a certain distance.
-
+   * 
    * @param distance : distance to move the robot.
    * @return A command.
    */
   public Command drive(Measure<Distance> distance) {
-    DifferentialDriveWheelPositions previousWheelPositions =
-        new DifferentialDriveWheelPositions(leftEncoder.getDistance(), rightEncoder.getDistance());
-    pidControllerTranslation.setSetpoint(distance.in(Meters));
-
+    // Sets the velocity PID controllers setpoint.
+    pidControllerDrive.setGoal(getPosition().in(Meters) + distance.in(Meters));
     return run(() -> {
-      double encoderValue = (leftEncoder.getDistance() - previousWheelPositions.leftMeters
-          + rightEncoder.getDistance() - previousWheelPositions.rightMeters) / 2;
-      double voltage = pidControllerTranslation.calculate(encoderValue);
+      // Calculates velocity setpoint.
+      Measure<Velocity<Distance>> velocitySetpoint =
+          MetersPerSecond.of(pidControllerDrive.calculate(getPosition().in(Meters)));
 
-      frontLeft.setVoltage(voltage);
-      frontRight.setVoltage(voltage);
-    }).deadlineWith(run(() -> {
-      differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
-    })).until(() -> pidControllerTranslation.atSetpoint());
+      // Calculates voltage outputs based on velocity setpoint.
+      Measure<Voltage> ffdOutput =
+          Volts.of(feedforwardDrive.calculate(velocitySetpoint.in(MetersPerSecond)));
+      Measure<Voltage> pidOutput =
+          Volts.of(pidControllerVoltage.calculate(velocitySetpoint.in(MetersPerSecond)));
+
+      // Averages voltage outputs.
+      Measure<Voltage> voltage = ffdOutput.plus(pidOutput).divide(2);
+
+      // Sets the voltages of the motors.
+      differentialDrive.tankDrive(voltage.in(Volts), voltage.in(Volts));
+    }).deadlineWith(updateRobotPose()).until(() -> pidControllerDrive.atGoal());
   }
 
   /**
-   * Rotates the robot a certain amount of degrees.
-
-   * @param degrees : amount of degrees to rotate the robot.
+   * Rotates the robot a certain orientation.
+   * 
+   * @param angle : angle to rotate the robot to(0 faces north, counterclockwise).
    * @return A command.
    */
-  public Command rotateBy(Measure<Angle> degrees) {
-    DifferentialDriveWheelPositions previousWheelPositions =
-        new DifferentialDriveWheelPositions(leftEncoder.getDistance(), rightEncoder.getDistance());
-    double distance = degrees.in(Degrees) * TURNING_RADIUS.in(Meters) * Math.PI * 2 / 360;
-    pidControllerRotation.setSetpoint(distance);
-
+  public Command rotateBy(Measure<Angle> angle) {
+    // Sets the velocity PID controllers setpoint.
+    pidControllerDrive.setGoal(getRobotOrientation().in(Radians) + angle.in(Radians));
     return run(() -> {
-      double encoderValue = (leftEncoder.getDistance() - previousWheelPositions.leftMeters
-          + rightEncoder.getDistance() - previousWheelPositions.rightMeters) / 2;
-      double voltage = pidControllerRotation.calculate(encoderValue);
+      // Calculates velocity setpoint.
+      Measure<Velocity<Angle>> velocitySetpoint =
+          RadiansPerSecond.of(pidControllerRotation.calculate(getPosition().in(Meters)));
 
-      frontLeft.setVoltage(-voltage);
-      frontRight.setVoltage(voltage);
-    }).deadlineWith(run(() -> {
-      differentialDriveOdometry.update(gyro.getRotation2d(), leftEncoder.get(), rightEncoder.get());
-    })).until(() -> pidControllerRotation.atSetpoint());
+      // Calculates voltage outputs based on velocity setpoint.
+      Measure<Voltage> ffdOutput =
+          Volts.of(feedforwardRotation.calculate(velocitySetpoint.in(RadiansPerSecond)));
+      Measure<Voltage> pidOutput =
+          Volts.of(pidControllerRotation.calculate(velocitySetpoint.in(RadiansPerSecond)));
+
+      // Averages voltage outputs.
+      Measure<Voltage> voltage = ffdOutput.plus(pidOutput).divide(2);
+
+      // Sets the voltages of the motors.
+      differentialDrive.tankDrive(voltage.in(Volts), voltage.in(Volts));
+    }).deadlineWith(updateRobotPose()).until(() -> pidControllerDrive.atGoal());
+  }
+
+  @Override
+  public void periodic() {
+    motors.periodicMethod();
   }
 }
