@@ -6,27 +6,30 @@ import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Seconds;
 import static edu.wpi.first.units.Units.Volts;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.GEARING_RATIO;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MAXIMUM_VOLTAGE_MAGNITUDE;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MOMENT_OF_INERTIA;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.ROBOT_MASS;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.STANDARD_DEVIATIONS;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.TRACK_WIDTH;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.WHEEL_RADIUS;
-import org.sciborgs1155.lib.GameTime;
+import edu.wpi.first.math.MathUtil;
 import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.system.plant.DCMotor;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Time;
 import edu.wpi.first.units.Velocity;
 import edu.wpi.first.units.Voltage;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.simulation.DifferentialDrivetrainSim;
 import edu.wpi.first.wpilibj.smartdashboard.Field2d;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 
-public class SimTank extends SubsystemBase implements TankIO {
+public class SimTank implements TankIO, Subsystem {
     /** Simulated drivetrain. */
     private DifferentialDrivetrainSim drivetrainSim;
 
@@ -35,10 +38,9 @@ public class SimTank extends SubsystemBase implements TankIO {
 
     /** Used to track simulation time. */
     private Measure<Time> lastTime;
-    private GameTime time;
 
     /** Used for graphical simulation. */
-    private Field2d simulatedField = new Field2d();
+    private Field2d simulatedField;
 
     /**
      * Stores the set voltages of the sim motors(we can't access directly).
@@ -52,45 +54,42 @@ public class SimTank extends SubsystemBase implements TankIO {
     }
 
     /**
-     * Stores the set voltages of the right sim motor(we can't access directly).
-     * 
-     * @param voltage : right voltage.
-     */
-    private void storeRightVoltage(Measure<Voltage> voltage) {
-        storedVoltages.right = voltage.in(Volts);
-    }
-
-    /**
-     * Stores the set voltages of the left sim motor(we can't access directly).
-     * 
-     * @param voltage : left voltage.
-     */
-    private void storeLeftVoltage(Measure<Voltage> voltage) {
-        storedVoltages.left = voltage.in(Volts);
-    }
-
-    /**
      * Gets the amount of time elapsed since last call.
      * 
      * @return Time Difference since last call.
      */
     private Measure<Time> getDeltaTime() {
-        Measure<Time> deltaTime = time.getTime().minus(lastTime);
-        lastTime = time.getTime();
+        Measure<Time> deltaTime = Seconds.of(Timer.getFPGATimestamp() - lastTime.in(Seconds));
+        lastTime = Seconds.of(Timer.getFPGATimestamp());
         return deltaTime;
     }
 
     @Override
-    public Command setVoltage(Measure<Voltage> voltage) {
+    public Command setVoltages(Measure<Voltage> left, Measure<Voltage> right) {
         return runOnce(() -> {
-            drivetrainSim.setInputs(voltage.in(Volts), voltage.in(Volts));
-            storeVoltages(voltage, voltage);
+            drivetrainSim.setInputs(right.in(Volts), left.in(Volts));
+            storeVoltages(left, right);
         });
     }
 
     @Override
-    public Command setVoltage(double volts) {
-        return setVoltage(Volts.of(volts));
+    public Command setPowers(double left, double right) {
+        return runOnce(() -> {
+            drivetrainSim.setInputs(left, right);
+            storeVoltages(
+                    Volts.of(MathUtil.clamp(left, -1, 1) * MAXIMUM_VOLTAGE_MAGNITUDE.in(Volts)),
+                    Volts.of(MathUtil.clamp(right, -1, 1) * MAXIMUM_VOLTAGE_MAGNITUDE.in(Volts)));
+        });
+    }
+
+    @Override
+    public Command setPower(double power) {
+        return setPowers(power, power);
+    }
+
+    @Override
+    public Command setVoltage(Measure<Voltage> voltage) {
+        return setVoltages(voltage, voltage);
     }
 
     @Override
@@ -105,15 +104,13 @@ public class SimTank extends SubsystemBase implements TankIO {
 
     @Override
     public Command setLeftVoltage(Measure<Voltage> voltage) {
-        return runOnce(() -> {
-            drivetrainSim.setInputs(voltage.in(Volts), storedVoltages.right);
-            storeLeftVoltage(voltage);
-        });
+        return setVoltages(voltage, Volts.of(storedVoltages.right));
     }
 
     @Override
-    public Command setLeftVoltage(double volts) {
-        return setVoltage(Volts.of(volts));
+    public Command setLeftPower(double power) {
+        return setLeftVoltage(
+                Volts.of(MathUtil.clamp(power, -1, 1) * MAXIMUM_VOLTAGE_MAGNITUDE.in(Volts)));
     }
 
     @Override
@@ -129,15 +126,13 @@ public class SimTank extends SubsystemBase implements TankIO {
 
     @Override
     public Command setRightVoltage(Measure<Voltage> voltage) {
-        return runOnce(() -> {
-            drivetrainSim.setInputs(storedVoltages.left, voltage.in(Volts));
-            storeRightVoltage(voltage);
-        });
+        return setVoltages(Volts.of(storedVoltages.left), voltage);
     }
 
     @Override
-    public Command setRightVoltage(double volts) {
-        return setVoltage(Volts.of(volts));
+    public Command setRightPower(double power) {
+        return setRightVoltage(
+                Volts.of(MathUtil.clamp(power, -1, 1) * MAXIMUM_VOLTAGE_MAGNITUDE.in(Volts)));
     }
 
     @Override
@@ -153,12 +148,13 @@ public class SimTank extends SubsystemBase implements TankIO {
 
     @Override
     public Measure<Velocity<Distance>> getLeftVelocity() {
-        return MetersPerSecond.of(drivetrainSim.getLeftVelocityMetersPerSecond());
+        return MetersPerSecond
+                .of(Math.round(drivetrainSim.getLeftVelocityMetersPerSecond() * 10) / 10);
     }
 
     @Override
     public Measure<Distance> getLeftDistance() {
-        return Meters.of(drivetrainSim.getLeftPositionMeters());
+        return Meters.of(Math.round(drivetrainSim.getLeftPositionMeters() * 10) / 10);
     }
 
     @Override
@@ -166,15 +162,15 @@ public class SimTank extends SubsystemBase implements TankIO {
         return Volts.of(storedVoltages.left);
     }
 
-
     @Override
     public Measure<Velocity<Distance>> getRightVelocity() {
-        return MetersPerSecond.of(drivetrainSim.getRightVelocityMetersPerSecond());
+        return MetersPerSecond
+                .of(Math.round(drivetrainSim.getRightVelocityMetersPerSecond() * 10) / 10);
     }
 
     @Override
     public Measure<Distance> getRightDistance() {
-        return Meters.of(drivetrainSim.getRightPositionMeters());
+        return Meters.of(Math.round(drivetrainSim.getRightPositionMeters() * 10) / 10);
     }
 
     @Override
@@ -200,6 +196,7 @@ public class SimTank extends SubsystemBase implements TankIO {
     /** Instantiates RealTank. */
     private SimTank(int leftleaderMotorID, int leftfollowerMotorID, int rightleaderMotorID,
             int rightfollowerMotorID) {
+        // Instantiates everything.
         drivetrainSim = new DifferentialDrivetrainSim(DCMotor.getKrakenX60(2), //
                 GEARING_RATIO, // 7.29:1 gearing reduction.
                 MOMENT_OF_INERTIA, // MOI of 7.5 kg m^2 (from CAD model).
@@ -208,7 +205,11 @@ public class SimTank extends SubsystemBase implements TankIO {
                 TRACK_WIDTH.in(Meters), // The track width is 0.7112 meters.
                 STANDARD_DEVIATIONS // Standart deviations in measurement.
         );
+        lastTime = Seconds.of(0);
+        simulatedField = new Field2d();
+        storedVoltages = new DifferentialDriveWheelVoltages(0, 0);
 
+        // Adds field to sim GUI.
         SmartDashboard.putData("Drivetrain Sim", simulatedField);
     }
 
@@ -222,6 +223,11 @@ public class SimTank extends SubsystemBase implements TankIO {
     @Override
     public Command defaultCommand() {
         return Commands.idle(this).withName("Default command on sim drivetrain.");
+    }
+
+    @Override
+    public Rotation2d getGyroReading() {
+        return drivetrainSim.getHeading();
     }
 
 

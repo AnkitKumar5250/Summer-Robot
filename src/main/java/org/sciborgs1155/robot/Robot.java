@@ -1,10 +1,13 @@
 package org.sciborgs1155.robot;
 
+import static edu.wpi.first.units.Units.Degrees;
+import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.Seconds;
 import static org.sciborgs1155.robot.Constants.PERIOD;
 
 import edu.wpi.first.wpilibj.DataLogManager;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.PowerDistribution;
 import edu.wpi.first.wpilibj.RobotController;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -14,9 +17,7 @@ import monologue.Logged;
 import monologue.Monologue;
 import org.littletonrobotics.urcl.URCL;
 import org.sciborgs1155.lib.CommandRobot;
-import org.sciborgs1155.lib.GameTime;
 import org.sciborgs1155.robot.Ports.Operator;
-import org.sciborgs1155.robot.elevator.Elevator;
 import org.sciborgs1155.robot.tankdrive.TankDrive;
 
 
@@ -28,17 +29,18 @@ import org.sciborgs1155.robot.tankdrive.TankDrive;
  */
 public class Robot extends CommandRobot implements Logged {
 
-  // INPUT DEVICES
+  /** Controller for everything besides drivetrain. */
+  @SuppressWarnings("unused")
   private final CommandXboxController operator = new CommandXboxController(Operator.OPERATOR);
+
+  /** Controller for drivetrain. */
   private final CommandXboxController driver = new CommandXboxController(Operator.DRIVER);
 
-  // SUBSYSTEMS
-  private final TankDrive drivetrain = TankDrive.real();
-  private final Elevator elevator = new Elevator();
+  /** Allows for keyboard control. */
+  private final Joystick keyboard = new Joystick(Operator.KEYBOARD_JOYSTICK);
 
-  // TIMER
-  private final GameTime gameTime = new GameTime();
-
+  /** Drivetrain subsystem. */
+  private final TankDrive drivetrain = TankDrive.sim();
 
   /** The robot contains subsystems, OI devices, and commands. */
   public Robot() {
@@ -62,9 +64,6 @@ public class Robot extends CommandRobot implements Logged {
     // Sets the brownout voltage of the robot.
     RobotController.setBrownoutVoltage(6.0);
 
-    // Starts timer.
-    gameTime.start();
-
     if (isReal()) {
       URCL.start();
     } else {
@@ -75,17 +74,7 @@ public class Robot extends CommandRobot implements Logged {
 
   /** Configures trigger -> command bindings. */
   private void configureBindings() {
-    // elevator moves up to the height appropriate for scoring in the large pole
-    // when 'A' is pressed
-    operator.a().onTrue(elevator.moveLarge());
 
-    // elevator moves up to the height appropriate for scoring in the large pole
-    // when 'B' is pressed
-    operator.b().onTrue(elevator.moveSmall());
-
-    // elevator moves up to the height appropriate for scoring in the large pole
-    // when 'X' is pressed
-    operator.x().onTrue(elevator.moveGround());
   }
 
   @Override
@@ -97,22 +86,35 @@ public class Robot extends CommandRobot implements Logged {
     configureBindings();
   }
 
-  /**
-   * Runs at the beggining of teleop.
-   */
   @Override
   public void teleopPeriodic() {
-    // Updates voltages based on driver input.
-    drivetrain.drive(driver.getLeftY(), driver.getRightY());
+    if (Robot.isReal()) {
+      drivetrain.driveTank(driver.getLeftY(), driver.getRightY()).schedule();
+    }
+    if (!Robot.isReal()) {
+      drivetrain.driveArcade(keyboard.getRawAxis(1), keyboard.getRawAxis(0)).schedule();
+    }
   }
 
-  /**
-   * Runs at the beggining of autonomous.
-   */
   @Override
   public void autonomousInit() {
     // Cancels all running commands at the beggining of autonomous.
     CommandScheduler.getInstance().cancelAll();
+  }
+
+  @Override
+  public void autonomousPeriodic() {
+    if (Robot.isReal()) {
+      drivetrain.driveTank(driver.getLeftY(), driver.getRightY()).schedule();
+    }
+    if (!Robot.isReal()) {
+      if (keyboard.getRawButtonPressed(1)) {
+        drivetrain.drive(Meters.of(1)).schedule();
+      }
+      if (keyboard.getRawButtonPressed(2)) {
+        drivetrain.rotateBy(Degrees.of(90)).schedule();
+      }
+    }
   }
 
   @Override

@@ -3,6 +3,7 @@ package org.sciborgs1155.robot.tankdrive;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Volts;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Velocity;
@@ -18,8 +19,13 @@ public class FakeTank implements TankIO, Subsystem {
     }
 
     @Override
-    public Command setVoltage(double volts) {
-        return Commands.idle(this).withName("Voltage command on fake drivetrain.");
+    public Command setPower(double power) {
+        return Commands.idle(this).withName("Power command on fake drivetrain.");
+    }
+
+    @Override
+    public Command setPowers(double left, double right) {
+        return Commands.idle(this).withName("Power command on fake drivetrain.");
     }
 
     @Override
@@ -43,8 +49,8 @@ public class FakeTank implements TankIO, Subsystem {
     }
 
     @Override
-    public Command setLeftVoltage(double volts) {
-        return Commands.idle(this).withName("Left voltage command on fake drivetrain.");
+    public Command setLeftPower(double power) {
+        return setLeftVoltage(Volts.of(0));
     }
 
     @Override
@@ -78,8 +84,8 @@ public class FakeTank implements TankIO, Subsystem {
     }
 
     @Override
-    public Command setRightVoltage(double volts) {
-        return Commands.idle(this).withName("Right voltage command on fake drivetrain.");
+    public Command setRightPower(double power) {
+        return setRightVoltage(Volts.of(0));
     }
 
     @Override
@@ -137,5 +143,15 @@ public class FakeTank implements TankIO, Subsystem {
     @Override
     public void periodicMethod() {
         return;
+    }
+
+    @Override
+    public Rotation2d getGyroReading() {
+        return new Rotation2d();
+    }
+
+    @Override
+    public Command setVoltages(Measure<Voltage> left, Measure<Voltage> right) {
+        return Commands.idle(this).withName("Voltage command on fake drivetrain.");
     }
 }

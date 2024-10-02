@@ -1,66 +1,69 @@
 {
   "HALProvider": {
     "Other Devices": {
-      "DutyCycleEncoder[0]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[18]/Fwd Limit": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[18]/Rev Limit": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[18]/Rotor Sensor": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[19]": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[19]/Fwd Limit": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[19]/Rev Limit": {
-        "header": {
-          "open": true
-        }
-      },
-      "Talon FX (v6)[19]/Rotor Sensor": {
-        "header": {
-          "open": true
-        }
+      "window": {
+        "visible": false
       }
     }
   },
   "NTProvider": {
     "types": {
       "/FMSInfo": "FMSInfo",
+      "/SmartDashboard/Drivetrain": "Subsystem",
       "/SmartDashboard/Drivetrain Sim": "Field2d",
+      "/SmartDashboard/ProfiledPIDController[1]": "ProfiledPIDController",
+      "/SmartDashboard/ProfiledPIDController[2]": "ProfiledPIDController",
+      "/SmartDashboard/ProfiledPIDController[3]": "ProfiledPIDController",
       "/SmartDashboard/Scheduler": "Scheduler"
+    },
+    "windows": {
+      "/SmartDashboard/Drivetrain Sim": {
+        "bottom": 1476,
+        "height": 8.210550308227539,
+        "left": 150,
+        "right": 2961,
+        "top": 79,
+        "width": 16.541748046875,
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/ProfiledPIDController[1]": {
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/ProfiledPIDController[2]": {
+        "window": {
+          "visible": true
+        }
+      },
+      "/SmartDashboard/ProfiledPIDController[3]": {
+        "window": {
+          "visible": true
+        }
+      }
     }
   },
   "NetworkTables": {
+    "Persistent Values": {
+      "open": false
+    },
+    "Retained Values": {
+      "open": false
+    },
     "transitory": {
       "SmartDashboard": {
+        "Drivetrain Sim": {
+          "double[]##v_/SmartDashboard/Drivetrain Sim/Robot": {
+            "open": true
+          }
+        },
         "open": true
       }
     }
   },
   "NetworkTables Info": {
-    "Clients": {
-      "open": true
-    },
     "Connections": {
       "open": true
     },

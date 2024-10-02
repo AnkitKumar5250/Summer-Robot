@@ -10,6 +10,7 @@ public final class Ports {
   public static final class Operator {
     public static final int OPERATOR = 0;
     public static final int DRIVER = 1;
+    public static final int KEYBOARD_JOYSTICK = 0;
   }
 
   /**

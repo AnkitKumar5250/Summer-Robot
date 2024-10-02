@@ -1,21 +1,27 @@
 package org.sciborgs1155.robot.tankdrive;
 
+import static org.sciborgs1155.robot.Ports.Drive.GYRO;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MAXIMUM_VOLTAGE_MAGNITUDE;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.WHEEL_RADIUS;
+import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.defaultGyroConfiguration;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.defaultTalonConfiguration;
 import com.ctre.phoenix6.controls.Follower;
+import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.hardware.TalonFX;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Velocity;
 import edu.wpi.first.units.Voltage;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
-import edu.wpi.first.wpilibj2.command.SubsystemBase;
+import edu.wpi.first.wpilibj2.command.Subsystem;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 
-public class RealTank extends SubsystemBase implements TankIO {
+public class RealTank implements TankIO, Subsystem {
     /** leader motor. */
     private TalonFX leftleader;
 
@@ -28,15 +34,27 @@ public class RealTank extends SubsystemBase implements TankIO {
     /** follower motor. */
     private TalonFX rightfollower;
 
+    /** Gyroscope */
+    private Pigeon2 gyro;
+
+    @Override
+    public Command setVoltages(Measure<Voltage> left, Measure<Voltage> right) {
+        return runOnce(() -> setRightVoltage(right).alongWith(setLeftVoltage(left)));
+    }
+
     @Override
     public Command setVoltage(Measure<Voltage> voltage) {
         return runOnce(() -> setRightVoltage(voltage).alongWith(setLeftVoltage(voltage)));
     }
 
     @Override
-    public Command setVoltage(double volts) {
-        // Converts volts to arbitrary units and runs 'setVoltage' command.
-        return setVoltage(Volts.of(volts));
+    public Command setPowers(double left, double right) {
+        return runOnce(() -> setRightPower(left).alongWith(setLeftPower(right)));
+    }
+
+    @Override
+    public Command setPower(double power) {
+        return setPowers(power, power);
     }
 
     @Override
@@ -55,8 +73,9 @@ public class RealTank extends SubsystemBase implements TankIO {
     }
 
     @Override
-    public Command setLeftVoltage(double volts) {
-        return setLeftVoltage(Volts.of(volts));
+    public Command setLeftPower(double power) {
+        return setLeftVoltage(
+                Volts.of(MathUtil.clamp(power, -1, 1) * MAXIMUM_VOLTAGE_MAGNITUDE.in(Volts)));
     }
 
     @Override
@@ -75,8 +94,9 @@ public class RealTank extends SubsystemBase implements TankIO {
     }
 
     @Override
-    public Command setRightVoltage(double volts) {
-        return setRightVoltage(Volts.of(volts));
+    public Command setRightPower(double power) {
+        return setRightVoltage(
+                Volts.of(MathUtil.clamp(power, -1, 1) * MAXIMUM_VOLTAGE_MAGNITUDE.in(Volts)));
     }
 
     @Override
@@ -160,6 +180,12 @@ public class RealTank extends SubsystemBase implements TankIO {
         // Makes the follower motor follow the leader motor.
         leftleader.setControl(new Follower(leftfollower.getDeviceID(), false));
         rightleader.setControl(new Follower(rightfollower.getDeviceID(), false));
+
+        // Instantiates gyroscope.
+        gyro = new Pigeon2(GYRO);
+
+        // Applies default gyro configuration.
+        gyro.getConfigurator().apply(defaultGyroConfiguration);
     }
 
     @Override
@@ -170,6 +196,11 @@ public class RealTank extends SubsystemBase implements TankIO {
     @Override
     public void periodicMethod() {
         return;
+    }
+
+    @Override
+    public Rotation2d getGyroReading() {
+        return gyro.getRotation2d();
     }
 
 }

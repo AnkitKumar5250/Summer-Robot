@@ -1,5 +1,6 @@
 package org.sciborgs1155.robot.tankdrive;
 
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Velocity;
@@ -9,6 +10,13 @@ import edu.wpi.first.wpilibj2.command.Command;
 /** IO interface representing one side of a tank drivetrain. */
 public interface TankIO {
   /**
+   * Gets gyroscope reading.
+   * 
+   * @return Measurement of the gyroscope.
+   */
+  public Rotation2d getGyroReading();
+
+  /**
    * Sets the voltage of both sides.
    * 
    * @param voltage : voltage.
@@ -16,13 +24,30 @@ public interface TankIO {
    */
   public Command setVoltage(Measure<Voltage> voltage);
 
+  
+  /**
+   * Sets the power of the both sides(-1.0 to 1.0).
+   * 
+   * @param power : power(-1.0 to 1.0).
+   * @return Command.
+   */
+  public Command setPower(double power);
+
   /**
    * Sets the voltage of both sides.
    * 
-   * @param voltage : volts.
+   * @param voltage : voltage.
    * @return Command.
    */
-  public Command setVoltage(double volts);
+  public Command setVoltages(Measure<Voltage> left, Measure<Voltage> right);
+
+   /**
+   * Sets the power of each side(-1.0 to 1.0).
+   * 
+   * @param power : power(-1.0 to 1.0).
+   * @return Command.
+   */
+  public Command setPowers(double left, double right);
 
   /**
    * Stops both sides.
@@ -56,12 +81,12 @@ public interface TankIO {
   public Command setLeftVoltage(Measure<Voltage> voltage);
 
   /**
-   * Sets the voltage of the left side.
+   * Sets the power of the left side(-1.0 to 1.0).
    * 
-   * @param voltage : volts.
+   * @param power : power(-1.0 to 1.0).
    * @return Command.
    */
-  public Command setLeftVoltage(double volts);
+  public Command setLeftPower(double power);
 
   /**
    * Stops the left side.
@@ -108,12 +133,12 @@ public interface TankIO {
   public Command setRightVoltage(Measure<Voltage> voltage);
 
   /**
-   * Sets the voltage of the right side.
+   * Sets the power of the left side(-1.0 to 1.0).
    * 
-   * @param voltage : volts.
+   * @param power : power(-1.0 to 1.0).
    * @return Command.
    */
-  public Command setRightVoltage(double volts);
+  public Command setRightPower(double power);
 
   /**
    * Stops the right side.

@@ -6,6 +6,7 @@ import static edu.wpi.first.units.Units.Kilograms;
 import static edu.wpi.first.units.Units.Meters;
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.MetersPerSecondPerSecond;
+import static edu.wpi.first.units.Units.Volts;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.Pigeon2Configuration;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
@@ -19,6 +20,7 @@ import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Mass;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Velocity;
+import edu.wpi.first.units.Voltage;
 
 /**
  * Constants for Tank drivetrain.
@@ -34,20 +36,20 @@ public class TankDriveConstants {
   // PID constants for rotation PID controller.
 
   /** Proportional component of the rotation PID controller. */
-  public static final double kPR = 0.1;
+  public static final double kPR = 1;
   /** Integral component of the rotation PID controller. */
-  public static final double kIR = 0.001;
+  public static final double kIR = 0.01;
   /** Derivative component of the rotation PID controller. */
-  public static final double kDR = 0.01;
+  public static final double kDR = 0.1;
 
   // PID constants for drive PID controller.
 
   /** Proportional component of the drive PID controller. */
-  public static final double kPD = 0.1;
+  public static final double kPD = 1;
   /** Integral component of the drive PID controller. */
-  public static final double kID = 0.001;
+  public static final double kID = 0.01;
   /** Derivative component of the drive PID controller. */
-  public static final double kDD = 0.01;
+  public static final double kDD = 0.1;
 
   // FFD constants for drive.
 
@@ -66,6 +68,9 @@ public class TankDriveConstants {
   public static final double kAA = 0.1;
   /** Angular static component of the FFD controller. */
   public static final double kAS = 0.2;
+
+  /** Maximum voltage applicable(positive or negative). */
+  public static final Measure<Voltage> MAXIMUM_VOLTAGE_MAGNITUDE = Volts.of(24);
 
   /** Max velocity of a motor. */
   public static final Measure<Velocity<Distance>> MAX_VELOCITY = MetersPerSecond.of(0);

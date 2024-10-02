@@ -8,7 +8,6 @@ import static edu.wpi.first.units.Units.RadiansPerSecond;
 import static edu.wpi.first.units.Units.Volts;
 import static org.sciborgs1155.robot.Ports.Drive.FRONT_LEFT_DRIVE;
 import static org.sciborgs1155.robot.Ports.Drive.FRONT_RIGHT_DRIVE;
-import static org.sciborgs1155.robot.Ports.Drive.GYRO;
 import static org.sciborgs1155.robot.Ports.Drive.REAR_LEFT_DRIVE;
 import static org.sciborgs1155.robot.Ports.Drive.REAR_RIGHT_DRIVE;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.INITIAL_ROBOT_POSE;
@@ -17,7 +16,6 @@ import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MAX_VELOCITY;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MINIMUM_DEGREE_THRESHOLD;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.MINIMUM_DISTANCE_THRESHOLD;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.TRACK_WIDTH;
-import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.defaultGyroConfiguration;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kAA;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kAS;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kAV;
@@ -30,11 +28,13 @@ import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kLS;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kLV;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kPD;
 import static org.sciborgs1155.robot.tankdrive.TankDriveConstants.kPR;
-import com.ctre.phoenix6.hardware.Pigeon2;
+import edu.wpi.first.math.MathUtil;
+import edu.wpi.first.math.controller.DifferentialDriveWheelVoltages;
 import edu.wpi.first.math.controller.ProfiledPIDController;
 import edu.wpi.first.math.controller.SimpleMotorFeedforward;
 import edu.wpi.first.math.estimator.DifferentialDrivePoseEstimator;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.DifferentialDriveKinematics;
 import edu.wpi.first.math.trajectory.TrapezoidProfile.Constraints;
@@ -43,7 +43,7 @@ import edu.wpi.first.units.Distance;
 import edu.wpi.first.units.Measure;
 import edu.wpi.first.units.Velocity;
 import edu.wpi.first.units.Voltage;
-import edu.wpi.first.wpilibj.drive.DifferentialDrive;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.SubsystemBase;
 
@@ -52,13 +52,10 @@ import edu.wpi.first.wpilibj2.command.SubsystemBase;
  */
 public class TankDrive extends SubsystemBase {
   /** TankIO */
-  private TankIO motors;
+  private TankIO hardware;
 
-  /** Gyroscope */
-  private Pigeon2 gyro;
-
-  /** Used for inputting voltages into TankIO. */
-  private DifferentialDrive differentialDrive;
+  /** Commanded Voltages. */
+  private DifferentialDriveWheelVoltages commandedVoltages;
 
   /** PID controller for translational motion. */
   private final ProfiledPIDController pidControllerDrive =
@@ -85,7 +82,7 @@ public class TankDrive extends SubsystemBase {
 
   /** Used to track robot position. */
   private final DifferentialDrivePoseEstimator differentialDriveOdometry =
-      new DifferentialDrivePoseEstimator(kinematics, gyro.getRotation2d(), 0, 0,
+      new DifferentialDrivePoseEstimator(kinematics, Rotation2d.fromDegrees(0), 0, 0,
           INITIAL_ROBOT_POSE);
 
   public static TankDrive sim() {
@@ -109,27 +106,25 @@ public class TankDrive extends SubsystemBase {
   /**
    * Instantiates drivetrain.
    */
-  private TankDrive(TankIO motors, boolean isReal) {
+  private TankDrive(TankIO hardware, boolean isReal) {
     // Instantiates everything.
-    if (isReal) {
-      this.gyro = new Pigeon2(GYRO);
-    }
-    this.motors = motors;
-
-    this.differentialDrive = new DifferentialDrive(motors::setLeftVoltage, motors::setRightVoltage);
-
-    // Applies default gyro configuration.
-    gyro.getConfigurator().apply(defaultGyroConfiguration);
+    this.hardware = hardware;
+    this.commandedVoltages = new DifferentialDriveWheelVoltages(0, 0);
 
     // Sets the right to be inverted
-    motors.setRightInverted(true);
+    hardware.setRightInverted(true);
+
+    // Adds data to the SmartDashboard.
+    updateRobotPose();
 
     // Sets the tolerance of pid controllers
     pidControllerDrive.setTolerance(MINIMUM_DISTANCE_THRESHOLD.in(Meters));
     pidControllerRotation.setTolerance(MINIMUM_DEGREE_THRESHOLD.in(Degrees));
 
-    // Sets the default command to stop
-    setDefaultCommand(motors.defaultCommand());
+    // Sets default command.
+    setDefaultCommand(run(() -> {
+
+    }).withName("Drivetrain Default Command"));
   }
 
   /**
@@ -156,7 +151,7 @@ public class TankDrive extends SubsystemBase {
    * @return The orientation of the robot(counterclockwise).
    */
   public Measure<Angle> getRobotOrientation() {
-    return Degrees.of(gyro.getAngle());
+    return Degrees.of(differentialDriveOdometry.getEstimatedPosition().getRotation().getDegrees());
   }
 
   /**
@@ -165,12 +160,12 @@ public class TankDrive extends SubsystemBase {
    * @return Distance.
    */
   private Measure<Distance> getPosition() {
-    return motors.getLeftDistance().plus(motors.getRightDistance()).divide(2);
+    return hardware.getLeftDistance().plus(hardware.getRightDistance()).divide(2);
   }
 
   private Command updateRobotPose() {
-    return runOnce(() -> differentialDriveOdometry.update(gyro.getRotation2d(),
-        motors.getLeftDistance().in(Meters), motors.getRightDistance().in(Meters)));
+    return runOnce(() -> differentialDriveOdometry.update(hardware.getGyroReading(),
+        hardware.getLeftDistance().in(Meters), hardware.getRightDistance().in(Meters)));
   }
 
   /**
@@ -179,18 +174,39 @@ public class TankDrive extends SubsystemBase {
    * @return A command.
    */
   public Command stop() {
-    return runOnce(() -> motors.stop()).andThen(runOnce(() -> updateRobotPose()));
+    return runOnce(() -> hardware.stop()).andThen(runOnce(() -> updateRobotPose()));
   }
 
   /**
-   * Drives based on driver input.
+   * Drives based on driver input(arcade). w
    * 
    * @param leftY : Y value of left joystick.
-   * @param rightY : y value of right joystick.
+   * @param rightY : Y value of right joystick.
    * @return A command.
    */
-  public Command drive(double leftY, double rightY) {
-    return run(() -> differentialDrive.tankDrive(leftY, rightY)).alongWith(updateRobotPose());
+  public Command driveTank(double leftY, double rightY) {
+    return runOnce(() -> {
+      commandedVoltages.left = MathUtil.clamp(leftY, -1, 1);
+      commandedVoltages.right = MathUtil.clamp(rightY, -1, 1);
+      updateRobotPose();
+    }).withName("Tank drive(Left: " + hardware.getLeftDistance().in(Meters) + ";" + "Right: "
+        + hardware.getRightDistance().in(Meters) + ")");
+  }
+
+  /**
+   * Drives based on driver input(tank).
+   * 
+   * @param speed : Y value of joystick.
+   * @param direction : X value of joystick.
+   * @return A command.
+   */
+  public Command driveArcade(double speed, double direction) {
+    return runOnce(() -> {
+      commandedVoltages.left = MathUtil.clamp((speed + direction) / 2, -1, 1);
+      commandedVoltages.right = MathUtil.clamp((speed - direction) / 2, -1, 1);
+      updateRobotPose();
+    }).withName("Arcade drive(Left: " + hardware.getLeftDistance().in(Meters) + ";" + "Right: "
+        + hardware.getRightDistance().in(Meters) + ")");
   }
 
   /**
@@ -202,6 +218,8 @@ public class TankDrive extends SubsystemBase {
   public Command drive(Measure<Distance> distance) {
     // Sets the velocity PID controllers setpoint.
     pidControllerDrive.setGoal(getPosition().in(Meters) + distance.in(Meters));
+    System.out.println("Drive command ran!");
+
     return run(() -> {
       // Calculates velocity setpoint.
       Measure<Velocity<Distance>> velocitySetpoint =
@@ -216,9 +234,11 @@ public class TankDrive extends SubsystemBase {
       // Averages voltage outputs.
       Measure<Voltage> voltage = ffdOutput.plus(pidOutput).divide(2);
 
-      // Sets the voltages of the motors.
-      differentialDrive.tankDrive(voltage.in(Volts), voltage.in(Volts));
-    }).deadlineWith(updateRobotPose()).until(() -> pidControllerDrive.atGoal());
+      // Sets the voltages of the hardware.
+      commandedVoltages.left = voltage.in(Volts);
+      commandedVoltages.right = voltage.in(Volts);
+    }).withName("Drive Distance(Error: " + pidControllerDrive.getPositionError() + ")")
+        .andThen(periodicCommand()).until(() -> pidControllerDrive.atGoal());
   }
 
   /**
@@ -228,8 +248,12 @@ public class TankDrive extends SubsystemBase {
    * @return A command.
    */
   public Command rotateBy(Measure<Angle> angle) {
+    System.out.println("Rotate command ran!");
     // Sets the velocity PID controllers setpoint.
     pidControllerDrive.setGoal(getRobotOrientation().in(Radians) + angle.in(Radians));
+
+    // Logs PID controller.
+    SmartDashboard.putData(pidControllerDrive);
     return run(() -> {
       // Calculates velocity setpoint.
       Measure<Velocity<Angle>> velocitySetpoint =
@@ -244,13 +268,40 @@ public class TankDrive extends SubsystemBase {
       // Averages voltage outputs.
       Measure<Voltage> voltage = ffdOutput.plus(pidOutput).divide(2);
 
-      // Sets the voltages of the motors.
-      differentialDrive.tankDrive(voltage.in(Volts), voltage.in(Volts));
-    }).deadlineWith(updateRobotPose()).until(() -> pidControllerDrive.atGoal());
+      // Sets the voltages of the hardware.
+      commandedVoltages.left = -voltage.in(Volts);
+      commandedVoltages.right = voltage.in(Volts);
+    }).withName("Rotate Angle(Error: " + pidControllerRotation.getPositionError() + ")")
+        .andThen(periodicCommand()).until(() -> pidControllerDrive.atGoal());
+  }
+
+  /**
+   * Command to run periodically no matter the operating mode.
+   * 
+   * @return Command.
+   */
+  public Command periodicCommand() {
+    return hardware.setVoltages(Volts.of(commandedVoltages.left), Volts.of(commandedVoltages.right))
+        .andThen(runOnce(() -> {
+          // Updates Smart Dashboard data.
+          SmartDashboard.putString("Velocities",
+              "L: " + hardware.getLeftVelocity().in(MetersPerSecond) + " R: "
+                  + hardware.getRightVelocity().in(MetersPerSecond));
+
+          SmartDashboard.putString("Commanded Voltages",
+              "L: " + commandedVoltages.left + " R: " + commandedVoltages.right);
+
+          SmartDashboard.putData(pidControllerDrive);
+          SmartDashboard.putData(pidControllerRotation);
+          SmartDashboard.putData(pidControllerVoltage);
+          
+          hardware.periodicMethod();
+          updateRobotPose();
+        }));
   }
 
   @Override
   public void periodic() {
-    motors.periodicMethod();
+    periodicCommand().schedule();
   }
 }
